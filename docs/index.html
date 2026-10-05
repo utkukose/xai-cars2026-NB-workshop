@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XAI Lab: Explainable AI in Medical Systems, IEEE CARS 2026</title>
+<meta name="description" content="Browser tools for the IEEE CARS 2026 workshop on explainable AI in medical systems: deployment decisions, exact Shapley values, LIME, counterfactuals and a CGM sensor-spoofing attack.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root {
+  --paper: #FFFCFB; --panel: #FFFFFF; --ink: #19202C; --muted: #5E6676; --line: #EAD6D3;
+  --grid-minor: rgba(214, 96, 96, 0.09); --grid-major: rgba(214, 96, 96, 0.22);
+  --alert: #C62D3A; --safe: #0F7B6C; --amber: #A86200; --violet: #5B4BB7; --focus: #2957D8;
+  --monitor-bg: #071316; --monitor-edge: #1E3A40; --monitor-ink: #D5F2EA; --monitor-muted: #86A39B;
+  --monitor-safe: #3EE0B8; --monitor-alert: #FF5A5F; --monitor-amber: #FFC24D;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #081417; --panel: #0C1C20; --ink: #D5F0E9; --muted: #8EA8A1; --line: #1E363B;
+  --grid-minor: rgba(62, 224, 184, 0.05); --grid-major: rgba(62, 224, 184, 0.14);
+  --alert: #FF5F66; --safe: #3EE0B8; --amber: #FFC24D; --violet: #B8A6FF; --focus: #8AB4FF;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--paper); color: var(--ink); font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif; font-size: 16px; line-height: 1.5; -webkit-text-size-adjust: 100%; }
+body { margin: 0; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+.wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+a { color: inherit; text-underline-offset: 3px; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+h1, h2, h3 { line-height: 1.15; margin: 0; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.2rem); letter-spacing: -0.025em; }
+h2 { font-size: 1.55rem; letter-spacing: -0.01em; }
+h3 { font-size: 1.05rem; margin: 18px 0 8px; }
+p { margin: 0 0 10px; }
+
+.masthead { display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: flex-end; justify-content: space-between; padding: 30px 0 20px; }
+.masthead p { max-width: 64ch; color: var(--muted); margin: 10px 0 0; }
+.head-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.trace { height: 34px; margin-top: 6px; }
+.trace path { fill: none; stroke: var(--alert); stroke-width: 2.4; stroke-linejoin: round; }
+
+button { font: inherit; color: var(--ink); background: var(--panel); border: 1.5px solid var(--ink); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
+button:hover { background: var(--ink); color: var(--panel); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+select, input[type="range"] { font: inherit; color: var(--ink); width: 100%; }
+select { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+input[type="range"] { accent-color: var(--alert); }
+
+[role="tablist"] { display: flex; gap: 2px; overflow-x: auto; border-bottom: 2px solid var(--ink); }
+[role="tab"] { border: none; border-radius: 0; background: transparent; color: var(--muted); padding: 10px 18px 12px; text-align: left; white-space: nowrap; position: relative; }
+[role="tab"]:hover { background: transparent; color: var(--ink); }
+[role="tab"] .t { display: block; font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+[role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 700; }
+[role="tab"][aria-selected="true"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: -2px; height: 5px; background: var(--alert); }
+
+.panel { padding: 26px 0 40px; }
+.intro { max-width: 72ch; margin-bottom: 20px; }
+.intro p { color: var(--muted); margin-top: 8px; }
+.grid { display: grid; gap: 22px; align-items: start; }
+.two { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+.explain { grid-template-columns: 300px minmax(0, 1fr); }
+.spoof { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+.sheet { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 18px 20px; }
+.row { display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.row h3 { margin-bottom: 8px; }
+.note, .muted-text { color: var(--muted); font-size: 0.9rem; }
+.control { display: flex; justify-content: space-between; font-weight: 700; margin-bottom: 4px; }
+output { font-variant-numeric: tabular-nums; min-width: 3.5ch; text-align: right; }
+
+.paper { background-color: var(--paper); background-image: linear-gradient(var(--grid-major) 1px, transparent 1px), linear-gradient(90deg, var(--grid-major) 1px, transparent 1px), linear-gradient(var(--grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px); background-size: 25px 25px, 25px 25px, 5px 5px, 5px 5px; border: 1px solid var(--line); border-radius: 4px; margin: 10px 0; }
+.chart svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--ink); font-family: inherit; font-size: 12.5px; }
+svg .tick, svg .muted { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+svg .axis-label { fill: var(--muted); font-size: 12px; }
+svg .val { font-variant-numeric: tabular-nums; }
+svg .strong { font-weight: 700; }
+svg .axis { stroke: var(--ink); stroke-width: 1; }
+svg .gridline { stroke: var(--line); stroke-width: 1; }
+svg .guide { stroke: var(--muted); stroke-dasharray: 3 3; }
+svg .diag { stroke: var(--muted); stroke-dasharray: 2 4; }
+svg .threshold { stroke: var(--ink); stroke-width: 2.5; stroke-dasharray: 6 4; }
+svg .f-alert { fill: var(--alert); } svg .f-safe { fill: var(--safe); } svg .f-amber { fill: var(--amber); }
+svg .line { fill: none; stroke-width: 2.4; stroke-linejoin: round; }
+svg .dashed { stroke-dasharray: 6 5; }
+svg .c-alert { stroke: var(--alert); fill: var(--alert); } svg .c-safe { stroke: var(--safe); fill: var(--safe); }
+svg .c-ink { fill: var(--ink); } svg .c-muted { stroke: var(--muted); } svg .c-amber { stroke: var(--amber); }
+svg polyline.c-alert, svg polyline.c-safe { fill: none; }
+svg .c-rep { stroke: var(--alert); }
+svg .hypo { stroke: var(--alert); stroke-width: 1.5; stroke-dasharray: 2 3; }
+svg .hypo-label { fill: var(--alert); font-size: 11.5px; }
+svg .band { fill: var(--muted); opacity: 0.14; }
+svg .future-label { fill: var(--amber); font-weight: 700; }
+svg .handle { fill: var(--panel); stroke: var(--alert); stroke-width: 2.5; cursor: ns-resize; }
+svg .handle.moved { fill: var(--alert); }
+
+.stats { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 14px 0 4px; }
+.stat { border-left: 3px solid var(--line); padding-left: 10px; }
+.stat .v { display: block; font-size: 1.55rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .l { display: block; font-size: 0.82rem; color: var(--muted); line-height: 1.25; }
+.stat.alert { border-color: var(--alert); } .stat.alert .v { color: var(--alert); }
+.stat.amber { border-color: var(--amber); } .stat.amber .v { color: var(--amber); }
+.errors { padding-left: 20px; margin: 6px 0 0; font-size: 0.93rem; }
+.errors li { margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+
+.field { margin-bottom: 10px; }
+.field label { display: block; font-size: 0.88rem; margin-bottom: 2px; }
+.slider-row { display: flex; align-items: center; gap: 10px; }
+.readout { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+.risk { font-size: 3.4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.risk.hi { color: var(--alert); } .risk.lo { color: var(--safe); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; font-variant-numeric: tabular-nums; margin: 6px 0 12px; }
+th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-weight: 700; }
+tr.sum td { font-weight: 700; border-top: 2px solid var(--ink); }
+.result { font-weight: 700; }
+
+.monitor { background: var(--monitor-bg); color: var(--monitor-ink); border: 3px solid var(--monitor-edge); border-radius: 14px; padding: 18px; position: sticky; top: 12px; }
+.monitor h3 { color: var(--monitor-muted); font-weight: 400; }
+.alarm { font-size: 1.7rem; font-weight: 700; padding: 10px 14px; border-radius: 8px; text-align: center; }
+.alarm.on { background: var(--monitor-alert); color: #FFFFFF; animation: blink 1.2s steps(2, jump-none) infinite; }
+.alarm.off { border: 2px solid var(--monitor-safe); color: var(--monitor-safe); }
+@keyframes blink { 50% { opacity: 0.55; } }
+@media (prefers-reduced-motion: reduce) { .alarm.on { animation: none; } }
+.vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 16px 0 10px; }
+.vitals div { border-top: 1px solid var(--monitor-edge); padding-top: 6px; }
+.vitals dt { color: var(--monitor-muted); font-size: 0.8rem; }
+.vitals dd { margin: 0; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--monitor-safe); }
+.vitals .wide { grid-column: 1 / -1; }
+.vitals .wide dd { font-size: 1.05rem; color: var(--monitor-ink); }
+.flag { min-height: 1.5em; font-size: 0.92rem; color: var(--monitor-muted); }
+.flag.warn { color: var(--monitor-amber); font-weight: 700; }
+.monitor svg text { fill: var(--monitor-ink); }
+.monitor svg .tick { fill: var(--monitor-muted); }
+.monitor svg .axis { stroke: var(--monitor-muted); }
+.monitor svg .f-alert { fill: var(--monitor-alert); } .monitor svg .f-safe { fill: var(--monitor-safe); }
+.buttons { justify-content: flex-start; margin-top: 6px; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 0.92rem; }
+.check input { width: auto; }
+#ex-label { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+footer { border-top: 2px solid var(--ink); padding: 18px 0 40px; font-size: 0.86rem; color: var(--muted); }
+footer p { max-width: 110ch; }
+
+@media (max-width: 900px) {
+  .two, .explain, .spoof { grid-template-columns: minmax(0, 1fr); }
+  .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .monitor { position: static; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1>XAI Lab</h1>
+      <svg class="trace" viewBox="0 0 320 34" aria-hidden="true"><path d="M0 22 H60 L68 22 L74 6 L82 32 L88 18 L92 22 H170 L178 22 L184 6 L192 32 L198 18 L202 22 H320"/></svg>
+      <p>Hands-on tools for the IEEE CARS 2026 workshop <em>Explainable Artificial Intelligence in Medical Systems: From Black Box Models to Reliable Clinical Decision Support</em>. Every model runs in this browser; nothing you enter leaves the page.</p>
+    </div>
+    <div class="head-actions">
+      <button id="theme" type="button" aria-pressed="false">Monitor view</button>
+      <a href="https://github.com/utkukose/xai-cars2026-NB-workshop">Notebooks and code on GitHub</a>
+    </div>
+  </header>
+
+  <nav role="tablist" aria-label="Lab tools, in the order of the workshop programme">
+    <button role="tab" id="tab-deploy" aria-controls="panel-deploy" aria-selected="true"><span class="t">10:00</span>Deploy?</button>
+    <button role="tab" id="tab-explain" aria-controls="panel-explain" aria-selected="false" tabindex="-1"><span class="t">10:20</span>Explain a patient</button>
+    <button role="tab" id="tab-shapley" aria-controls="panel-shapley" aria-selected="false" tabindex="-1"><span class="t">10:25</span>Shapley by hand</button>
+    <button role="tab" id="tab-spoof" aria-controls="panel-spoof" aria-selected="false" tabindex="-1"><span class="t">11:00</span>Spoof the sensor</button>
+  </nav>
+
+  <main>
+    <section class="panel" id="panel-deploy" role="tabpanel" aria-labelledby="tab-deploy">
+      <div class="intro">
+        <h2>Would you deploy this model?</h2>
+        <p>A neural network classifies 569 breast biopsies as benign or malignant. Each prediction comes from a model that never saw that biopsy during training. Move the threshold and watch what a 97 percent accuracy figure hides.</p>
+      </div>
+      <div class="grid two">
+        <div class="sheet">
+          <label class="control" for="thr">Decision threshold <output id="thr-out" for="thr">0.50</output></label>
+          <input type="range" id="thr" min="0.02" max="0.98" step="0.01" value="0.5">
+          <div class="stats" id="deploy-stats" aria-live="polite"></div>
+          <div class="paper chart" id="hist"></div>
+        </div>
+        <div class="sheet">
+          <h3>Wrong and sure</h3>
+          <p class="note">The most confident mistakes at the current threshold. A confident error looks exactly like a confident correct answer.</p>
+          <ol class="errors" id="errors"></ol>
+          <h3>Does 0.9 mean 90 percent?</h3>
+          <div class="paper chart" id="calib"></div>
+          <p class="note" id="calib-note"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-explain" role="tabpanel" aria-labelledby="tab-explain" hidden>
+      <div class="intro">
+        <h2>Why this risk, for this patient?</h2>
+        <p>A gradient boosting model predicts coronary artery disease from 13 clinical variables of the UCI Cleveland data. Edit any value. The Shapley values are computed exactly, over all 8,192 coalitions of variables, against 16 reference patients.</p>
+      </div>
+      <div class="grid explain">
+        <div class="sheet">
+          <div class="field"><label for="patient">Patient</label><select id="patient"></select></div>
+          <div id="feature-controls"></div>
+          <button id="reset-patient" type="button">Restore recorded values</button>
+        </div>
+        <div class="sheet">
+          <div class="readout"><span id="risk" class="risk">0.00</span><span id="risk-label" class="note"></span></div>
+          <h3>SHAP: how each value moves the risk</h3>
+          <div class="paper chart" id="waterfall"></div>
+          <div class="row"><h3>LIME: a local linear approximation</h3><button id="lime-again" type="button">Resample LIME</button></div>
+          <div class="paper chart" id="lime"></div>
+          <p class="note" id="lime-note" aria-live="polite"></p>
+          <div class="row"><h3>What would change the prediction?</h3><button id="cf-run" type="button">Find a counterfactual</button></div>
+          <div id="cf-out" class="note" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-shapley" role="tabpanel" aria-labelledby="tab-shapley" hidden>
+      <div class="intro">
+        <h2>Shapley values by hand</h2>
+        <p>Pick three variables. They become players in a cooperative game whose payoff is the predicted risk. An absent player takes its values from 16 reference patients and the results are averaged; every other variable keeps this patient's value. The Shapley value is a player's marginal contribution averaged over every order of arrival.</p>
+      </div>
+      <div class="grid two">
+        <div class="sheet">
+          <div class="field"><label for="sh-patient">Patient</label><select id="sh-patient"></select></div>
+          <div class="field"><label for="sh-a">First player</label><select id="sh-a"></select></div>
+          <div class="field"><label for="sh-b">Second player</label><select id="sh-b"></select></div>
+          <div class="field"><label for="sh-c">Third player</label><select id="sh-c"></select></div>
+          <h3>Every coalition</h3>
+          <table id="sh-coalitions"></table>
+        </div>
+        <div class="sheet">
+          <h3>Every order of arrival</h3>
+          <table id="sh-orders"></table>
+          <p class="result" id="sh-result" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-spoof" role="tabpanel" aria-labelledby="tab-spoof" hidden>
+      <div class="intro">
+        <h2>Spoof the sensor</h2>
+        <p>Each example is one real hour of continuous glucose monitoring from an older adult with type 1 diabetes, and in each case glucose fell below 70 mg/dL within the next 30 minutes. The alert model warned correctly. Drag the reported readings, or run the attacker, and try to silence the warning while staying within 15 mg/dL of every true reading.</p>
+      </div>
+      <div class="grid spoof">
+        <div class="sheet">
+          <div class="row"><button id="ex-prev" type="button">Previous example</button><span id="ex-label"></span><button id="ex-next" type="button">Next example</button></div>
+          <div class="paper chart" id="cgm"></div>
+          <div class="row buttons">
+            <button id="attack" type="button">Run the attacker</button>
+            <button id="reveal" type="button" aria-pressed="false">Show what happened next</button>
+            <button id="cgm-reset" type="button">Restore true readings</button>
+            <label class="check"><input type="checkbox" id="budget" checked> Keep every change within 15 mg/dL</label>
+          </div>
+          <p class="note" id="attack-note" aria-live="polite"></p>
+        </div>
+        <aside class="monitor" aria-live="polite" aria-label="Alert monitor">
+          <div id="alarm" class="alarm off">No alert</div>
+          <dl class="vitals">
+            <div><dt>Risk from the model</dt><dd id="m-risk"></dd></div>
+            <div><dt>Alert threshold</dt><dd id="m-thr"></dd></div>
+            <div><dt>Queries used by the attacker</dt><dd id="m-queries">0</dd></div>
+            <div><dt>Largest change to a reading</dt><dd id="m-change"></dd></div>
+            <div class="wide"><dt>Counterfactual margin: how much lower glucose would have to be to trigger the alert</dt><dd id="m-margin"></dd></div>
+          </dl>
+          <p class="flag" id="m-flag"></p>
+          <h3>What the explanation says</h3>
+          <div class="chart" id="cgm-shap"></div>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Data: Wisconsin Diagnostic Breast Cancer (UCI, via scikit-learn); UCI Cleveland heart disease (CC BY 4.0); continuous glucose monitoring data of Weinstock et al. (2016) as distributed by GlucoBench, whose example traces on this page remain under CC BY-SA 4.0. The models are small teaching models and must not be used for clinical decisions.</p>
+    <p>Prof. Dr. Utku Köse, Süleyman Demirel University, University of North Dakota, Universidad Panamericana and Vel Tech University. Material released under CC BY-NC-SA 4.0 unless stated otherwise. <a href="https://github.com/utkukose/xai-cars2026-NB-workshop">Source and notebooks</a>.</p>
+  </footer>
+</div>
+<script src="lab-data.js"></script>
+<script src="lab-core.js"></script>
+<script src="lab-ui.js"></script>
+</body>
+</html>
