@@ -1,0 +1,7 @@
+workshop_data/
+tools/.cache/
+__pycache__/
+.ipynb_checkpoints/
+*.part
+.venv/
+.DS_Store
