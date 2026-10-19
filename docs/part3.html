@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Part 3, Attacks and XAI-based analysis, IEEE CARS 2026</title>
+<meta name="description" content="Part 3 of the IEEE CARS 2026 workshop on explainable AI in medical systems: attack three medical alert models on real data and see which explanations expose the manipulation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  /* ---------- bedside-monitor panels: dark in both themes ---------- */
+  .mon {
+    background: var(--monitor-bg); color: var(--monitor-ink);
+    border: 3px solid var(--monitor-edge); border-radius: 14px; padding: 16px 18px;
+    --ink: var(--monitor-ink); --muted: var(--monitor-muted); --line: var(--monitor-edge);
+    --panel: var(--monitor-panel); --paper: var(--monitor-bg);
+    --red: var(--monitor-red); --teal: var(--monitor-green); --amber: var(--monitor-amber); --violet: var(--monitor-violet);
+    color-scheme: dark;
+  }
+  .mon h3 { color: var(--monitor-muted); font-weight: 400; font-size: 1rem; margin: 0 0 8px; }
+  .alarm { font-size: clamp(1.3rem, 2.4vw, 1.75rem); font-weight: 700; line-height: 1.2; padding: 10px 14px; border-radius: 9px; text-align: center; border: 2px solid transparent; transition: background 0.35s, color 0.35s, border-color 0.35s; }
+  .alarm.on { background: var(--monitor-red); border-color: var(--monitor-red); color: #FFFFFF; animation: alarm-blink 1.2s steps(2, jump-none) infinite; }
+  .alarm.off { border-color: var(--monitor-green); color: var(--monitor-green); }
+  @keyframes alarm-blink { 50% { opacity: 0.55; } }
+  @media (prefers-reduced-motion: reduce) { .alarm.on { animation: none; } }
+  .readout { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin: 14px 0 0; }
+  .readout div { border-top: 1px solid var(--monitor-edge); padding-top: 6px; min-width: 0; }
+  .readout .span { grid-column: 1 / -1; }
+  .readout dt { color: var(--monitor-muted); font-size: 0.82rem; line-height: 1.3; margin: 0; }
+  .readout dd { margin: 2px 0 0; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--monitor-green); }
+  .readout dd.hot { color: var(--monitor-red); }
+  .readout dd.warm { color: var(--monitor-amber); }
+  .mon .chart svg { display: block; width: 100%; height: auto; }
+  .flag { min-height: 1.4em; font-size: 0.92rem; line-height: 1.4; color: var(--monitor-muted); margin: 10px 0 0; }
+  .flag.warn { color: var(--monitor-amber); font-weight: 700; }
+  #det-shift { max-width: 780px; }
+  .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .check { display: inline-flex; gap: 8px; align-items: center; font-size: 0.95rem; cursor: pointer; }
+  .check input { width: auto; margin: 0; accent-color: var(--accent); }
+
+  /* ---------- cold open ---------- */
+  .p3-open .wrap { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 40px; align-items: center; }
+  .p3-open h1 { font-size: clamp(2.3rem, 4.7vw, 3.9rem); max-width: 13ch; }
+  .p3-open .begin { margin-top: 28px; }
+  .break-answer { color: var(--monitor-amber); font-weight: 700; font-size: 1.1rem; margin: 14px 0 0; }
+  .break-answer[hidden] { display: none; }
+  .open-mon { margin: 0; }
+  .open-mon .alarm { font-size: clamp(1.5rem, 3vw, 2.1rem); }
+  .open-mon .chart { margin-top: 10px; }
+  .open-mon svg text { fill: var(--monitor-muted); }
+  .open-mon .readout { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .open-mon .readout dd { color: var(--monitor-ink); }
+  .open-cap { color: #FFFFFF; font-size: clamp(1.15rem, 2.1vw, 1.5rem); font-weight: 700; margin: 14px 0 0; opacity: 0; transition: opacity 0.7s ease-out; }
+  .open-cap.shown { opacity: 1; }
+  .open-cap span { display: block; color: var(--monitor-muted); font-weight: 400; font-size: 0.92rem; margin-top: 4px; }
+  .open-replay { margin-top: 12px; font-size: 0.9rem; padding: 6px 14px; color: var(--monitor-ink); border-color: var(--monitor-muted); background: transparent; }
+  .open-replay:hover { background: var(--monitor-ink); color: var(--monitor-bg); }
+  svg .o-true { fill: none; stroke: var(--monitor-muted); stroke-width: 2; stroke-dasharray: 4 4; }
+  svg .o-rep { fill: none; stroke: var(--monitor-ink); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+  svg .o-fut { fill: none; stroke: var(--monitor-amber); stroke-width: 2.5; stroke-dasharray: 6 5; }
+  svg .o-futdot { fill: var(--monitor-amber); }
+  svg .o-head { fill: var(--monitor-green); }
+  svg .o-hypo { stroke: var(--monitor-red); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  .open-mon svg .o-hypo-l { fill: var(--monitor-red); }
+
+  /* ---------- station 1: signal paths ---------- */
+  .lanes-ctrl { margin-bottom: 18px; }
+  .lanes { display: grid; gap: 14px; }
+  .lane { display: block; width: 100%; font: inherit; text-align: left; cursor: pointer; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--amber); border-radius: 10px; padding: 14px 18px 12px; }
+  .lane:hover, .lane:focus-visible { border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
+  .lane > span { display: block; }
+  .lane-top { display: flex !important; justify-content: space-between; align-items: baseline; gap: 6px 20px; flex-wrap: wrap; }
+  .lane-title { font-weight: 700; font-size: 1.15rem; }
+  .lane-mode { color: var(--amber); font-weight: 700; font-size: 0.92rem; }
+  .lane .chart { margin: 6px 0 4px; }
+  .lane-foot { display: flex !important; justify-content: space-between; gap: 4px 20px; flex-wrap: wrap; color: var(--muted); font-size: 0.9rem; }
+  .lane-foot b { color: var(--ink); }
+  .lane-go { text-decoration: underline; text-underline-offset: 3px; }
+  svg .ln-wire { stroke: var(--muted); stroke-width: 2; }
+  svg .ln-head { fill: var(--muted); }
+  svg .ln-node rect { fill: var(--panel); stroke: var(--ink); stroke-width: 1.5; }
+  svg .ln-node.model rect { stroke-width: 2.5; }
+  svg .ln-node text { font-size: 14px; font-weight: 700; }
+  svg .ln-att { opacity: 0; transform: translateY(-16px); transition: opacity 0.35s ease-out, transform 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25); }
+  svg .ln-att circle { fill: var(--amber); stroke: var(--panel); stroke-width: 3; }
+  svg .ln-att text { font-size: 13px; font-weight: 700; }
+  svg .ln-obs { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 5 5; }
+  svg .ln-late, svg .ln-obs { opacity: 0; transition: opacity 0.45s ease-out 0.3s; }
+  svg .ln-note { fill: var(--muted); font-size: 12.5px; }
+  .lanes.armed svg .ln-att { opacity: 1; transform: none; }
+  .lanes.armed svg .ln-late, .lanes.armed svg .ln-obs { opacity: 1; }
+
+  /* ---------- gates: the evidence opens after a prediction ---------- */
+  .gate { transition: opacity 0.35s ease-out, filter 0.35s ease-out; }
+  .gate.locked { opacity: 0.3; filter: saturate(0.2); pointer-events: none; user-select: none; }
+  .lock-note { color: var(--muted); margin: 4px 0 0; }
+  .lock-note[hidden] { display: none; }
+
+  /* ---------- station 2: silence the alarm ---------- */
+  .spoof-grid, .af-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  .ctrl-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 12px 0 8px; }
+  .study { margin: 18px 0 0; padding: 14px 18px; border: 1px solid var(--line); border-left: 6px solid var(--amber); border-radius: 8px; background: var(--paper); max-width: 80ch; }
+  .study[hidden] { display: none; }
+  .study p { margin: 0; }
+  .study p + p { margin-top: 8px; color: var(--muted); }
+  .study strong { font-size: 1.15em; }
+  svg .band { fill: var(--muted); opacity: 0.16; }
+  svg .hit { fill: transparent; }
+  svg .handle { fill: var(--panel); stroke: var(--ink); stroke-width: 2.4; }
+  svg .handle.moved { fill: var(--amber); stroke: var(--amber); }
+  svg .handle-g { cursor: ns-resize; touch-action: none; outline: none; }
+  svg .handle-g:focus-visible .handle { stroke: var(--focus); stroke-width: 3.5; }
+  svg .hypo { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  svg .hypo-l { fill: var(--red); font-size: 11.5px; }
+
+  /* ---------- station 3: detection ---------- */
+  .detect-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px; align-items: start; }
+  .det-card h3 { margin: 0; font-size: 1.1rem; }
+  .det-card .auroc { color: var(--muted); margin: 4px 0 0; min-height: 1.55em; font-variant-numeric: tabular-nums; }
+  .det-out { font-variant-numeric: tabular-nums; margin: 8px 0 0; line-height: 1.5; }
+  .det-out b { font-size: 1.3rem; }
+  .det-out span { color: var(--muted); }
+  .legend { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 0.9rem; color: var(--muted); margin: 6px 0 0; }
+  .legend i { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .det-why { font-size: 1.1rem; font-weight: 700; margin: 20px 0 0; max-width: 72ch; }
+  .det-why[hidden] { display: none; }
+  svg.det-svg { cursor: ew-resize; touch-action: pan-y; }
+  svg .flag-zone { fill: var(--amber); opacity: 0.1; }
+  svg .thr-grip { fill: var(--ink); }
+
+  /* ---------- station 4: campaign ---------- */
+  .camp-controls { display: flex; flex-wrap: wrap; gap: 14px 26px; align-items: flex-end; }
+  .camp-controls .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .camp-controls .field > span, .camp-controls label { font-weight: 700; font-size: 0.92rem; }
+  .camp-controls input[type="range"] { width: 220px; max-width: 100%; }
+  .camp-out { font-weight: 700; margin: 10px 0 0; min-height: 1.5em; font-variant-numeric: tabular-nums; }
+  svg .dot-gen { fill: var(--teal); opacity: 0.55; }
+  svg .dot-man { fill: var(--amber); }
+  svg .dot-flag { stroke: var(--ink); stroke-width: 1.5; opacity: 1; }
+  svg .cut { stroke: var(--red); stroke-width: 1.2; stroke-dasharray: 3 3; }
+  svg .marker-labels text { paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+  svg .camp-mark { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 5 4; }
+  svg .alarm-mark { stroke: var(--amber); stroke-width: 3; }
+  svg .lam { stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 6 4; }
+  svg .ph-line { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+
+  /* ---------- station 5: sepsis ---------- */
+  .sep-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 22px; align-items: start; }
+  .sep-status { display: flex; flex-wrap: wrap; gap: 4px 22px; margin: 4px 0 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .sep-status i { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin-right: 8px; border-radius: 2px; }
+  .sep-status i.dash { height: 0; border-top: 2.5px dashed var(--ink); border-radius: 0; }
+  .vitals-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 16px; margin-top: 8px; align-items: end; }
+  .vital h4 { margin: 0 0 2px; font-size: 0.85rem; color: var(--muted); font-weight: 700; }
+  .shift-table th, .shift-table td { padding: 5px 8px; }
+  .shift-table td.over { color: var(--amber); font-weight: 700; }
+  .side-box { background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; }
+  .side-box + .side-box { margin-top: 16px; }
+  .side-box h3 { margin-top: 0; }
+  svg .vband { fill: var(--muted); opacity: 0.18; }
+  svg .onset { stroke: var(--violet); stroke-width: 2; stroke-dasharray: 2 4; }
+  svg .mark-gen { stroke: var(--ink); stroke-width: 1.5; }
+  svg .mark-att { stroke: var(--amber); stroke-width: 2.5; }
+
+  /* ---------- station 6: atrial fibrillation ---------- */
+  .af-plots { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; margin: 12px 0; }
+  .af-plots h3 { margin: 0 0 4px; font-size: 0.95rem; }
+  #af-budget button { min-width: 50px; padding: 8px 12px; }
+  .af-side { margin-top: 16px; }
+
+  @media (max-width: 980px) {
+    .p3-open .wrap, .spoof-grid, .af-grid, .detect-grid, .sep-grid { grid-template-columns: minmax(0, 1fr); }
+    .p3-open .wrap { gap: 28px; }
+    .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 640px) {
+    .af-plots { grid-template-columns: minmax(0, 1fr); }
+    .open-mon .readout { gap: 8px 10px; }
+    .open-mon .readout dd { font-size: 1.1rem; }
+    .readout dd { font-size: 1.15rem; }
+  }
+  @media (max-width: 420px) {
+    .vitals-grid { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body data-page="p3" data-part="p3">
+<header id="site-top"></header>
+<main>
+
+  <section class="coldopen monitor p3-open" aria-labelledby="p3-title">
+    <div class="wrap">
+      <div>
+        <p class="part-tag"><strong>Part 3 · Stress test</strong><span>11:00 to 11:30</span></p>
+        <h1 id="p3-title">Attacks and XAI-based analysis</h1>
+        <p class="question">Can an attacker change a medical alert without any metric noticing?</p>
+        <p class="break-answer" id="p3-break-answer" hidden></p>
+        <div class="row begin"><button class="btn primary big" type="button" data-begin>Begin</button></div>
+      </div>
+      <figure class="mon open-mon">
+        <div class="alarm on" id="p3-open-alarm" aria-live="polite">Low glucose soon</div>
+        <div class="chart" id="p3-open-chart"></div>
+        <dl class="readout">
+          <div><dt>Risk from the model</dt><dd id="p3-open-risk"></dd></div>
+          <div><dt>Alert threshold</dt><dd id="p3-open-thr"></dd></div>
+          <div><dt>Largest change</dt><dd id="p3-open-change"></dd></div>
+        </dl>
+        <figcaption class="open-cap" id="p3-open-cap"></figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-threat">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">1 of 6</p>
+        <h2>Three systems, three attackers</h2>
+        <p class="lead">Each lane is a real signal path from a sensor to a clinical decision. Where would an attacker sit?</p>
+        <p class="nbref">The three attacks are built in NB4, NB5 and NB6</p>
+      </div>
+      <div class="row lanes-ctrl"><button class="btn primary" type="button" id="lanes-show" aria-pressed="false">Show the attackers</button><span class="note">Each lane opens its attack.</span></div>
+      <div class="lanes" id="lanes"></div>
+      <p class="takeaway" id="s1-take" hidden>None of these attacks touches the model; they change what the model sees.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-silence">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">2 of 6</p>
+        <h2>Silence the alarm</h2>
+        <p class="lead">Each hour below is real, and the alert warned correctly. Drag the readings, or run the attacker, to silence it.</p>
+        <p class="nbref">In NB4, sections 2 and 3</p>
+      </div>
+      <div class="app">
+        <p class="poll-label">Each reading may change by at most 15 mg/dL. Can a correct alert be silenced?</p>
+        <div class="poll" id="poll-silence">
+          <button type="button" data-value="rarely">Rarely</button>
+          <button type="button" data-value="sometimes">Sometimes</button>
+          <button type="button" data-value="mostly">Most of the time</button>
+        </div>
+        <p class="lock-note" data-gate-note="p3-silence">Answer first; the attack opens below.</p>
+      </div>
+      <div class="app gate" data-gate="p3-silence" style="margin-top:16px">
+        <div class="spoof-grid">
+          <div>
+            <div class="row spread">
+              <button class="btn" type="button" id="cgm-prev">Previous example</button>
+              <span class="num" id="cgm-label" style="font-weight:700"></span>
+              <button class="btn" type="button" id="cgm-next">Next example</button>
+            </div>
+            <div class="chart paper" id="cgm-chart" style="margin:12px 0 4px"></div>
+            <p class="legend" id="cgm-legend"></p>
+            <div class="ctrl-row">
+              <button class="btn primary" type="button" id="cgm-attack">Run the attacker</button>
+              <button class="btn" type="button" id="cgm-reveal" aria-pressed="false">Show what happened next</button>
+              <button class="btn" type="button" id="cgm-reset">Restore true readings</button>
+            </div>
+            <p class="note" id="cgm-note" aria-live="polite"></p>
+          </div>
+          <aside class="mon" aria-live="polite" aria-label="Alert monitor">
+            <div class="alarm on" id="cgm-alarm">Low glucose soon</div>
+            <dl class="readout">
+              <div><dt>Risk from the model</dt><dd id="cgm-risk"></dd></div>
+              <div><dt>Alert threshold</dt><dd id="cgm-thr"></dd></div>
+              <div><dt>Queries used by the attacker</dt><dd id="cgm-queries">0</dd></div>
+              <div><dt>Largest change to a reading</dt><dd id="cgm-change"></dd></div>
+              <div class="span"><dt>Counterfactual margin: how much lower every reading would have to be for the alert to return</dt><dd id="cgm-margin"></dd></div>
+            </dl>
+            <p class="flag" id="cgm-flag"></p>
+          </aside>
+        </div>
+        <div class="study" id="cgm-study" hidden aria-live="polite"></div>
+      </div>
+      <p class="takeaway" id="s2-take" hidden>A decision-based attacker needs no access to the model, only patience and the alert.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-detect">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">3 of 6</p>
+        <h2>What gave it away?</h2>
+        <p class="lead">A silenced alert sits just below the threshold, like many genuine hours. Two explanations still carry a trace.</p>
+        <p class="nbref">In NB4, section 4</p>
+      </div>
+      <div class="app">
+        <p class="poll-label">Which explanation exposes a manipulated reading better?</p>
+        <div class="poll" id="poll-signal">
+          <button type="button" data-value="shap">The attribution pattern (SHAP anomaly)</button>
+          <button type="button" data-value="margin">The counterfactual margin</button>
+          <button type="button" data-value="neither">Neither</button>
+        </div>
+        <p class="lock-note" data-gate-note="p3-signal">Answer first; the evidence opens below.</p>
+      </div>
+      <div class="app gate" data-gate="p3-signal" style="margin-top:16px">
+        <div class="detect-grid">
+          <div class="det-card">
+            <h3>Attribution pattern (SHAP anomaly)</h3>
+            <p class="auroc" id="det-shap-auroc"></p>
+            <div class="chart paper" id="det-shap-chart"></div>
+            <label class="control" for="det-shap-thr"><span>Flag a window when the score is at least</span><output id="det-shap-throut" for="det-shap-thr"></output></label>
+            <input type="range" id="det-shap-thr" min="0" max="15" step="0.1" value="5">
+            <p class="det-out" id="det-shap-out" aria-live="polite"></p>
+          </div>
+          <div class="det-card">
+            <h3>Counterfactual margin</h3>
+            <p class="auroc" id="det-margin-auroc"></p>
+            <div class="chart paper" id="det-margin-chart"></div>
+            <label class="control" for="det-margin-thr"><span>Flag a window when the margin is at most</span><output id="det-margin-throut" for="det-margin-thr"></output></label>
+            <input type="range" id="det-margin-thr" min="0" max="20" step="0.1" value="0.5">
+            <p class="det-out" id="det-margin-out" aria-live="polite"></p>
+          </div>
+        </div>
+        <p class="legend"><span><i style="background:var(--teal)"></i>genuine windows just below the threshold</span><span><i style="background:var(--amber)"></i>manipulated windows</span><span>Bars show the share of each group; the shaded side is flagged.</span></p>
+        <p class="det-why" id="det-why" hidden>A minimal attack stops right at the decision boundary; the counterfactual margin measures exactly that distance.</p>
+        <h3 style="margin-top:26px">Where the attack pushes the explanation</h3>
+        <p class="note">Mean SHAP value of manipulated windows minus genuine windows, per feature, in log-odds.</p>
+        <div class="chart paper" id="det-shift"></div>
+      </div>
+      <p class="takeaway" id="s3-take" hidden>Explanations make the manipulation observable, but not every explanation signal is equally informative.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-campaign">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">4 of 6</p>
+        <h2>Watch the campaign</h2>
+        <p class="lead">Near-threshold windows arrive one by one, and a window is flagged when its score is more suspicious than 95 percent of genuine ones. Start the stream, then start a campaign and watch the sequential test on the flags.</p>
+        <p class="nbref">In NB4, section 4: the Page-Hinkley test</p>
+      </div>
+      <div class="app">
+        <div class="camp-controls">
+          <div class="field">
+            <span>Monitored signal</span>
+            <div class="seg" id="camp-signal" role="group" aria-label="Monitored signal">
+              <button type="button" data-value="margin" aria-pressed="true">Counterfactual margin</button>
+              <button type="button" data-value="shap" aria-pressed="false">SHAP anomaly</button>
+            </div>
+          </div>
+          <div class="field">
+            <label for="camp-share">Manipulated share in the campaign: <output id="camp-share-out" for="camp-share">20%</output></label>
+            <input type="range" id="camp-share" min="10" max="50" step="5" value="20">
+          </div>
+          <div class="field">
+            <span>Speed</span>
+            <div class="seg" id="camp-speed" role="group" aria-label="Speed of the stream">
+              <button type="button" data-value="slow" aria-pressed="false">Slow</button>
+              <button type="button" data-value="normal" aria-pressed="true">Normal</button>
+              <button type="button" data-value="fast" aria-pressed="false">Fast</button>
+            </div>
+          </div>
+        </div>
+        <div class="ctrl-row" style="margin-top:16px">
+          <button class="btn primary" type="button" id="camp-start">Start the stream</button>
+          <button class="btn" type="button" id="camp-campaign" disabled>Start the campaign</button>
+          <button class="btn" type="button" id="camp-reset">Reset</button>
+        </div>
+        <div class="chart paper" id="camp-chart"></div>
+        <p class="camp-out" id="camp-out" aria-live="polite"></p>
+      </div>
+      <p class="takeaway" id="s4-take" hidden>A single flag proves little; a sequential test on the flags of an informative signal turns them into a campaign alarm.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-sepsis">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">5 of 6</p>
+        <h2>Delay the sepsis alert</h2>
+        <p class="lead">This attacker reads the risk score and estimates which changes lower it, an attack in the spirit of ZOO.</p>
+        <p class="nbref">In NB5, sections 2 and 3</p>
+      </div>
+      <div class="app">
+        <p class="poll-label">Changes within measurement noise, applied hour by hour. How long can a sepsis alert be delayed?</p>
+        <div class="poll" id="poll-sepsis">
+          <button type="button" data-value="none">Not at all</button>
+          <button type="button" data-value="hours">A few hours</button>
+          <button type="button" data-value="whole">Through the whole stay</button>
+        </div>
+        <p class="lock-note" data-gate-note="p3-sepsis">Answer first; the replay opens below.</p>
+      </div>
+      <div class="app gate" data-gate="p3-sepsis" style="margin-top:16px">
+        <div class="sep-grid">
+          <div>
+            <div class="row">
+              <label for="sep-stay" style="font-weight:700">Attacked stay</label>
+              <select id="sep-stay"></select>
+            </div>
+            <p class="note" id="sep-pick-note" style="margin:6px 0 0"></p>
+            <div class="sep-status" id="sep-status" aria-live="polite"></div>
+            <div class="chart paper" id="sep-risk" style="margin:10px 0 4px"></div>
+            <div class="ctrl-row">
+              <button class="btn primary" type="button" id="sep-play">Play the stay</button>
+              <input type="range" id="sep-scrub" min="0" max="1" step="1" value="0" style="flex:1;min-width:150px" aria-label="Hour of the stay">
+              <span class="num" id="sep-hour" style="font-weight:700;min-width:6.5em"></span>
+            </div>
+            <h3 style="margin:14px 0 2px">The six charted vital signs</h3>
+            <p class="note" style="margin:0">Genuine in ink, manipulated in amber; shaded, one hour's allowed change around the genuine value.</p>
+            <div class="vitals-grid" id="sep-vitals"></div>
+          </div>
+          <div>
+            <div class="side-box">
+              <h3>All attacked stays, as measured</h3>
+              <div class="stats" id="sep-summary"></div>
+              <p id="sep-honest" style="margin:10px 0 0"></p>
+            </div>
+            <div class="side-box">
+              <h3>Allowed per hour, and the largest change reached</h3>
+              <p class="note">A vital sign that is not re-measured is carried forward, so the next hour can shift it again and changes accumulate.</p>
+              <table class="shift-table" id="sep-shift"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" id="s5-take" hidden>Every validation statistic stays exactly as reported; only the patients notice.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-af">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">6 of 6</p>
+        <h2>Hide atrial fibrillation</h2>
+        <p class="lead">Shift the time between heartbeats within a budget and try to silence a correct notification.</p>
+        <p class="nbref">In NB6, sections 2 and 3</p>
+      </div>
+      <div class="app">
+        <div class="af-grid">
+          <div>
+            <div class="row">
+              <label for="af-example" style="font-weight:700">AF window</label>
+              <select id="af-example"></select>
+              <label class="check"><input type="checkbox" id="af-compare" checked> Show a non-AF window</label>
+            </div>
+            <div class="af-plots">
+              <div>
+                <h3>Tachogram: time between beats</h3>
+                <div class="chart paper" id="af-tacho"></div>
+              </div>
+              <div>
+                <h3>Poincaré plot: each interval against the next</h3>
+                <div class="chart paper" id="af-poincare"></div>
+              </div>
+            </div>
+            <p class="legend" style="margin:0 0 14px"><span><i style="background:var(--ink)"></i>genuine AF window</span><span><i style="background:var(--amber)"></i>after the attack</span><span><i style="background:var(--teal)"></i>non-AF window</span><span><i style="background:var(--muted);opacity:0.35"></i>budget around each beat</span></p>
+            <div class="control"><span>Budget per beat, in ms</span></div>
+            <div class="seg" id="af-budget" role="group" aria-label="Budget per beat in milliseconds"></div>
+            <div class="ctrl-row">
+              <button class="btn primary" type="button" id="af-attack">Run the attacker</button>
+              <button class="btn" type="button" id="af-reset">Restore the rhythm</button>
+            </div>
+            <p class="note" id="af-note" aria-live="polite"></p>
+          </div>
+          <div>
+            <aside class="mon" aria-live="polite" aria-label="Watch notification">
+              <h3>Watch</h3>
+              <div class="alarm on" id="af-state">Possible atrial fibrillation</div>
+              <dl class="readout">
+                <div class="span"><dt>Probability of atrial fibrillation from the model</dt><dd id="af-prob"></dd></div>
+                <div><dt>Budget per beat</dt><dd id="af-budget-val"></dd></div>
+                <div><dt>Largest change</dt><dd id="af-change"></dd></div>
+                <div class="span"><dt>Queries used by the attacker</dt><dd id="af-queries">0</dd></div>
+              </dl>
+            </aside>
+            <div class="side-box af-side">
+              <h3 style="font-size:1rem">How much change silences a notification?</h3>
+              <div class="chart" id="af-curve"></div>
+              <p class="note" id="af-curve-note" style="margin:6px 0 0"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" id="s6-take" hidden>How much noise an attacker needs is a property of the model that no accuracy figure reports.</p>
+    </div>
+  </section>
+
+  <section class="bridge" id="code">
+    <div class="wrap">
+      <h2>Now open NB4, NB5 and NB6</h2>
+      <p class="lead">The notebooks run each attack at scale, compute every detection signal including GEMEX geometry, and let you change the budgets and the threshold.</p>
+      <div class="bridge-steps">
+        <div><strong>NB4 · CGM</strong>Attack 60 correct alerts, then the SHAP anomaly, the counterfactual margin, GEMEX and the Page-Hinkley test.</div>
+        <div><strong>NB5 · ICU</strong>A streaming score-based attack on real ICU stays, and the delay analysis across the cohort.</div>
+        <div><strong>NB6 · wearable</strong>The budget ladder, Poincaré plots and the detection signals for the AF notification.</div>
+      </div>
+      <div class="nb-buttons" data-notebooks="NB4,NB5,NB6"></div>
+    </div>
+  </section>
+
+  <section data-next="p4"></section>
+</main>
+<footer data-footer data-credits="Data: CGM recordings of Weinstock et al. (2016), Diabetes Care, as distributed by GlucoBench (CC BY-SA 4.0); PhysioNet/Computing in Cardiology Challenge 2019, training set A (CC BY 4.0); MIT-BIH Atrial Fibrillation Database, PhysioNet (ODC Attribution 1.0). The traces shown are excerpts of these datasets."></footer>
+<script src="assets/site-data.js"></script>
+<script src="assets/lab-core.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/part3.js"></script>
+</body>
+</html>

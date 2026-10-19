@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Part 4, Governance and the dashboard: Explainable AI in Medical Systems, IEEE CARS 2026</title>
+<meta name="description" content="Part 4 of the IEEE CARS 2026 workshop on explainable AI in medical systems: the risk tiers of the EU AI Act, a subgroup audit with bootstrap intervals, a model card and a clinician dashboard with human oversight and an audit log.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  [hidden] { display: none !important; }
+
+  /* ---------- cold open: the discharge papers ---------- */
+  .open-grid { display: grid; grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr); grid-template-areas: "head papers" "foot papers"; column-gap: clamp(28px, 4.5vw, 64px); align-items: start; }
+  .open-head { grid-area: head; align-self: end; }
+  .open-foot { grid-area: foot; }
+  .p4-open h1 { font-size: clamp(2.5rem, 5vw, 4.2rem); max-width: 14ch; }
+  .hookline { font-size: clamp(1.45rem, 2.7vw, 2.15rem); line-height: 1.2; font-weight: 700; letter-spacing: -0.015em; margin: 22px 0 0; max-width: 22ch; }
+  .papers { grid-area: papers; align-self: center; position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 24px 48px -32px color-mix(in srgb, var(--ink) 60%, transparent); }
+  .papers::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 7px; background: var(--accent); border-radius: 6px 0 0 6px; }
+  .papers-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 10px 24px; padding: 18px 22px 14px 30px; border-bottom: 2px solid var(--ink); }
+  .papers-kicker { margin: 0; font-size: 0.86rem; color: var(--muted); }
+  .papers-title { margin: 2px 0 0; font-size: 1.3rem; font-weight: 700; line-height: 1.2; }
+  .papers-fields { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; font-size: 0.86rem; }
+  .papers-fields dt { color: var(--muted); }
+  .papers-fields dd { margin: 0; font-weight: 700; padding-bottom: 1px; border-bottom: 1px dotted var(--muted); }
+  .papers-rows { list-style: none; margin: 0; padding: 0; }
+  .prow { display: grid; grid-template-columns: 28px 5.6rem minmax(0, 1fr) minmax(0, 1.08fr); column-gap: 14px; row-gap: 2px; align-items: center; padding: 11px 22px 11px 30px; border-bottom: 1px solid var(--line); transition: background-color 0.25s; }
+  .prow:last-child { border-bottom: 0; }
+  .prow .art { color: var(--muted); font-size: 0.92rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .prow .obl { font-weight: 700; line-height: 1.25; }
+  .prow .ev { font-size: 0.94rem; line-height: 1.3; min-height: 1.3em; }
+  .prow .miss { color: var(--red); font-weight: 700; margin-right: 8px; }
+  .prow .ev a.chip { font-size: 0.8rem; padding: 1px 9px; }
+  .prow.checking { background: color-mix(in srgb, var(--accent) 11%, transparent); }
+  .prow.fresh { animation: filedflash 1.6s ease-out; }
+  @keyframes filedflash { from { background-color: color-mix(in srgb, var(--accent) 24%, transparent); } to { background-color: transparent; } }
+  .pbox { width: 28px; height: 28px; display: block; }
+  .pbox rect, .filed svg rect { fill: var(--panel); stroke: var(--muted); stroke-width: 1.6; }
+  .prow.ok .pbox rect, .filed svg rect { stroke: var(--teal); }
+  .prow.missing .pbox rect { stroke: var(--red); stroke-dasharray: 3 3; }
+  .pbox .tick, .filed svg path { fill: none; stroke: var(--teal); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  .pbox .tick { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset 0.45s ease-out; }
+  .prow.ok .pbox .tick { stroke-dashoffset: 0; }
+  .papers-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 18px; padding: 14px 22px 18px 30px; border-top: 2px solid var(--ink); min-height: 78px; }
+  .papers-count { color: var(--muted); font-size: 0.95rem; }
+  .papers-count strong { color: var(--ink); }
+  .meter { display: flex; gap: 5px; margin-top: 7px; }
+  .meter i { width: 26px; height: 8px; border-radius: 2px; background: var(--line); transition: background-color 0.3s; }
+  .meter i.on { background: var(--teal); }
+  .stamp { display: inline-block; color: var(--red); border: 3px solid currentColor; border-radius: 8px; padding: 6px 14px; font-weight: 700; font-size: 1.12rem; line-height: 1.15; letter-spacing: 0.02em; transform: rotate(-5deg); background: var(--panel); box-shadow: inset 0 0 0 2px var(--panel), inset 0 0 0 4px currentColor; white-space: nowrap; }
+  .stamp.ok { color: var(--teal); }
+  .stamp.slam { animation: slam 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) both; }
+  @keyframes slam { from { opacity: 0; transform: rotate(-5deg) scale(1.9); } to { opacity: 1; transform: rotate(-5deg) scale(1); } }
+
+  /* ---------- shared bits of the stations ---------- */
+  .filed { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; font-weight: 700; }
+  .filed svg { width: 24px; height: 24px; flex: none; }
+  .filed a { font-weight: 400; color: var(--muted); }
+  .key { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 7px; vertical-align: -1px; }
+  .key.violet { background: var(--violet); }
+  .key.ink { background: var(--ink); }
+  .stat.ink { border-color: var(--ink); }
+  .ci { color: var(--muted); }
+  .sub h3 { margin-top: 0; }
+
+  /* ---------- station 1: the risk pyramid ---------- */
+  .sort { display: grid; grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); gap: 22px 32px; align-items: start; }
+  .sort-left { position: sticky; top: 84px; }
+  .pyr svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .tier { cursor: pointer; }
+  .tier:focus { outline: none; }
+  .tier .hit { fill: transparent; }
+  .tier .shape { fill: color-mix(in srgb, var(--c) 15%, var(--panel)); stroke: var(--c); stroke-width: 1.5; transition: fill 0.2s; }
+  .tier:hover .shape, .sort.picking .tier .shape { fill: color-mix(in srgb, var(--c) 28%, var(--panel)); }
+  .tier:focus-visible .shape { stroke: var(--focus); stroke-width: 3; }
+  .tier:focus-visible .tname { text-decoration: underline; }
+  .tier .swatch { fill: var(--c); }
+  .tier .tname { font-weight: 700; font-size: 14px; }
+  .tier .tcount { fill: var(--muted); font-size: 12px; }
+  .tok { pointer-events: none; transition: transform 0.55s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  .tok circle { fill: var(--ink); stroke: var(--panel); stroke-width: 2; }
+  .tok text { fill: var(--paper); font-size: 12px; font-weight: 700; }
+  .tok.sel circle { fill: var(--accent); }
+  .tok.ok circle { stroke: var(--teal); stroke-width: 3; }
+  .tok.bad circle { fill: var(--panel); stroke: var(--red); stroke-width: 2.5; }
+  .tok.bad text { fill: var(--red); }
+  .tok.pop circle { animation: pop 0.32s ease-out; transform-box: fill-box; transform-origin: center; }
+  @keyframes pop { from { transform: scale(0.2); } to { transform: scale(1); } }
+  .sort-hint { min-height: 1.5em; margin: 10px 0 0; color: var(--muted); }
+  .sort-ctrl { margin-top: 14px; }
+  .score { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-top: 16px; }
+  .score .v { font-size: 2.6rem; font-weight: 700; line-height: 1; }
+  .score .l { color: var(--muted); }
+  .systems { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .sys-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; background: var(--panel); border: 1.5px solid var(--line); border-radius: 10px; padding: 7px 10px 7px 6px; transition: border-color 0.2s, box-shadow 0.2s; }
+  .sys { font: inherit; color: var(--ink); background: none; border: 0; padding: 4px; border-radius: 6px; display: flex; gap: 10px; align-items: flex-start; text-align: left; cursor: pointer; line-height: 1.35; }
+  .sys[disabled] { cursor: default; }
+  .sys .n { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 0.85rem; }
+  .sys-card.sel { border-color: var(--accent); box-shadow: 0 0 0 1.5px var(--accent); }
+  .sys-card.sel .n { background: var(--accent); }
+  .sys-card select { width: 13.8rem; }
+  .sys-card .verdict { grid-column: 1 / -1; margin: 0 4px 3px 40px; font-size: 0.94rem; line-height: 1.4; }
+  .sys-card.ok { border-color: var(--teal); }
+  .sys-card.bad { border-color: var(--red); }
+  .sys-card.ok .verdict strong { color: var(--teal); }
+  .sys-card.bad .verdict strong { color: var(--red); }
+  .law-note { margin: 18px 0 0; }
+
+  /* ---------- station 2: the subgroup audit ---------- */
+  .audit-top { display: grid; grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.55fr); gap: 22px 32px; align-items: start; margin-top: 10px; }
+  .sens-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; margin: 4px 0 14px; }
+  .sens-pair .v { font-size: 2.6rem; }
+  .boot-row { margin-top: 14px; }
+  .boot-count { color: var(--muted); font-size: 0.92rem; }
+  .boot-verdict { margin: 14px 0 0; font-weight: 700; line-height: 1.4; }
+  .audit-table { margin-top: 26px; }
+  .audit-table th, .audit-table td { padding: 8px 10px; }
+  .audit-table thead th { border-bottom: 2px solid var(--ink); }
+  .audit-table caption { caption-side: top; text-align: left; color: var(--muted); font-size: 0.9rem; padding: 0 0 8px; }
+  .ci { white-space: nowrap; }
+  .subgrid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 22px; margin-top: 22px; }
+  .flip-stats { display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: baseline; margin-bottom: 4px; }
+  .flip-stats .big { font-size: 2.2rem; font-weight: 700; line-height: 1.1; }
+
+  /* ---------- station 3: the model card ---------- */
+  .cardlab { display: grid; grid-template-columns: minmax(0, 0.6fr) minmax(0, 1.4fr); gap: 24px 34px; align-items: start; }
+  .card-side { position: sticky; top: 84px; }
+  .toggles { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 7px; }
+  .toggles button { font: inherit; color: var(--ink); width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+  .toggles button:hover { border-color: var(--ink); }
+  .toggles button[aria-checked="true"] { border-color: var(--accent); }
+  .toggles .sw { flex: none; position: relative; width: 36px; height: 21px; border-radius: 999px; background: var(--line); transition: background-color 0.2s; }
+  .toggles .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 15px; height: 15px; border-radius: 50%; background: var(--panel); box-shadow: 0 0 0 1px var(--muted); transition: transform 0.2s; }
+  .toggles button[aria-checked="true"] .sw { background: var(--accent); }
+  .toggles button[aria-checked="true"] .sw::after { transform: translateX(15px); box-shadow: none; }
+  .card-count { font-weight: 700; margin: 6px 0 10px; }
+  .card-msg { min-height: 1.4em; margin: 10px 0 0; color: var(--muted); font-size: 0.92rem; }
+  .doc { position: relative; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: clamp(18px, 2.6vw, 32px); box-shadow: 0 24px 48px -34px color-mix(in srgb, var(--ink) 60%, transparent); }
+  .doc-head { border-bottom: 3px double var(--ink); padding-bottom: 12px; margin-bottom: 2px; }
+  .doc-kind { margin: 0; color: var(--accent); font-weight: 700; }
+  .doc-title { margin: 2px 0 10px; font-size: 1.4rem; max-width: 24ch; }
+  .doc-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 14px; margin: 0; font-size: 0.9rem; }
+  .doc-meta dt { color: var(--muted); }
+  .doc-meta dd { margin: 0; }
+  .doc-sec { padding: 13px 0; border-bottom: 1px solid var(--line); }
+  .doc-sec:last-of-type { border-bottom: 0; padding-bottom: 0; }
+  .doc-sec h4 { margin: 0 0 5px; font-size: 1.02rem; display: flex; gap: 10px; align-items: baseline; }
+  .doc-sec h4 .n { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; min-width: 1.2em; }
+  .doc-sec p { margin: 0 0 6px; max-width: 72ch; }
+  .doc-sec table { font-size: 0.9rem; margin: 4px 0 10px; }
+  .doc-sec.off h4 { color: var(--muted); }
+  .doc-sec .gap { margin: 0; color: var(--red); font-size: 0.92rem; border: 1.5px dashed color-mix(in srgb, var(--red) 60%, transparent); border-radius: 6px; padding: 5px 10px; }
+  .doc-sec.in { animation: rise 0.45s ease-out both; }
+  .doc .stamp { position: absolute; top: 20px; right: 20px; font-size: 1.3rem; }
+
+  /* ---------- station 4: the dashboard on a bedside monitor ---------- */
+  .dash.monitor { --paper: var(--monitor-bg); --panel: var(--monitor-panel); --ink: var(--monitor-ink); --muted: var(--monitor-muted); --line: var(--monitor-edge); --red: var(--monitor-red); --teal: var(--monitor-green); --amber: var(--monitor-amber); --violet: var(--monitor-violet); --accent: var(--monitor-green); --on-accent: var(--monitor-bg); --focus: #8AB4FF; color-scheme: dark; background: var(--monitor-bg); color: var(--ink); border: 3px solid var(--monitor-edge); border-radius: 14px; padding: clamp(14px, 2.2vw, 26px); }
+  .dash-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 18px; padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .dash-head span { color: var(--muted); font-size: 0.9rem; }
+  .dash-grid { display: grid; grid-template-columns: minmax(0, 0.74fr) minmax(0, 1.66fr); gap: 20px 30px; align-items: start; }
+  .dash .field { margin-bottom: 16px; }
+  .dash .field > label { display: block; font-size: 0.88rem; color: var(--muted); margin-bottom: 4px; }
+  .dash .control label { color: var(--muted); font-weight: 400; font-size: 0.88rem; }
+  .dash select { width: 100%; }
+  .dash .risk { display: block; font-size: 4rem; font-weight: 700; line-height: 1; margin-top: 6px; }
+  .dash .risk.hi { color: var(--red); }
+  .dash .risk.lo { color: var(--teal); }
+  .dash .risk-l { display: block; color: var(--muted); font-size: 0.88rem; margin-top: 6px; }
+  .decision { margin: 14px 0 14px; padding: 9px 12px; border-radius: 8px; font-weight: 700; text-align: center; border: 2px solid var(--teal); color: var(--teal); }
+  .decision.refer { background: var(--red); border-color: var(--red); color: var(--on-accent); }
+  .facts { margin: 0; display: grid; gap: 9px; }
+  .facts div { border-top: 1px solid var(--line); padding-top: 7px; }
+  .facts dt { color: var(--muted); font-size: 0.84rem; }
+  .facts dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .facts dd.warn { color: var(--amber); }
+  .dash-sub { color: var(--muted); margin: 0 0 6px; font-size: 0.92rem; }
+  #dash-wf svg text { paint-order: stroke; stroke: var(--paper); stroke-width: 4px; stroke-linejoin: round; }
+  .dash-wait { color: var(--muted); margin: 40px 0; text-align: center; }
+  .dash-act { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .dash-act select { width: auto; min-width: 16rem; }
+  .dash-msg { min-height: 1.5em; margin: 12px 0 0; color: var(--muted); }
+  .dash-msg.warn { color: var(--amber); font-weight: 700; }
+  .log-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 6px 16px; }
+  .log-head h3 { margin: 0; font-size: 1.3rem; }
+  .log-scroll { overflow: auto; max-height: 330px; margin-top: 12px; border: 1px solid var(--line); border-radius: 8px; }
+  .log-scroll table { min-width: 900px; font-size: 0.9rem; }
+  .log-scroll th { position: sticky; top: 0; background: var(--panel); z-index: 1; border-bottom: 2px solid var(--ink); white-space: nowrap; }
+  .log-scroll td.empty { color: var(--muted); padding: 16px 10px; }
+  .log-scroll td:nth-child(-n+6) { white-space: nowrap; }
+  .log-scroll tr.new td { animation: logged 1.4s ease-out; }
+  @keyframes logged { from { background-color: color-mix(in srgb, var(--accent) 24%, transparent); } to { background-color: transparent; } }
+  .tag { display: inline-block; font-size: 0.84rem; font-weight: 700; padding: 0 9px; border-radius: 999px; border: 1.5px solid currentColor; white-space: nowrap; }
+  .tag.over { color: var(--amber); }
+  .tag.acc { color: var(--teal); }
+  .run { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 18px 34px; align-items: start; }
+  .run h3 { margin-top: 0; font-size: 1.3rem; }
+  pre.code { margin: 10px 0 12px; padding: 14px 16px; border-radius: 8px; background: var(--monitor-bg); color: var(--monitor-ink); overflow-x: auto; font: 0.92rem/1.65 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .tabs5 { list-style: none; margin: 0; padding: 0; counter-reset: tab; }
+  .tabs5 li { counter-increment: tab; display: grid; grid-template-columns: 2.1rem minmax(0, 1fr); align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .tabs5 li:last-child { border-bottom: 0; }
+  .tabs5 li::before { content: counter(tab); color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tabs5 p { margin: 0; }
+  .tabs5 span { color: var(--muted); }
+  :root[data-theme="dark"] .papers, :root[data-theme="dark"] .doc { box-shadow: none; }
+
+  /* ---------- narrow screens ---------- */
+  @media (max-width: 980px) {
+    .open-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "papers" "foot"; }
+    .papers { margin: 30px 0 4px; }
+    .sort, .audit-top, .subgrid, .cardlab, .dash-grid, .run { grid-template-columns: minmax(0, 1fr); }
+    .sort-left { display: contents; }
+    .pyr-wrap { order: 1; }
+    .systems { order: 2; }
+    .sort-ctrl-wrap { order: 3; }
+    .card-side { position: static; }
+  }
+  @media (max-width: 640px) {
+    .papers-head, .papers-foot { padding-left: 22px; padding-right: 14px; }
+    .prow { grid-template-columns: 28px minmax(0, 1fr); padding: 10px 14px 10px 22px; }
+    .prow .pbox { grid-row: 1 / span 3; align-self: start; }
+    .prow .art, .prow .obl, .prow .ev { grid-column: 2; }
+    .prow .ev { margin-top: 3px; }
+    .sys-card { grid-template-columns: minmax(0, 1fr); }
+    .sys-card select { width: 100%; }
+    .sys-card .verdict { margin-left: 4px; }
+    .doc .stamp { position: static; margin: 0 0 12px; }
+    .dash-act select { min-width: 0; width: 100%; }
+    .dash .risk { font-size: 3.2rem; }
+    .audit-table { font-size: 0.86rem; }
+    .audit-table th, .audit-table td { padding: 7px 5px; }
+    .doc-sec table { font-size: 0.84rem; }
+  }
+</style>
+</head>
+<body data-page="p4" data-part="p4">
+<header id="site-top"></header>
+<main>
+  <section class="coldopen grid-bg p4-open" id="papers-open" aria-labelledby="title">
+    <div class="wrap open-grid">
+      <div class="open-head">
+        <p class="part-tag"><strong>Part 4 · Discharge</strong><span>11:30 to 11:50</span></p>
+        <h1 id="title">Governance and the dashboard</h1>
+        <p class="hookline">No discharge without papers.</p>
+      </div>
+      <div class="papers" id="papers" role="group" aria-labelledby="papers-title">
+        <div class="papers-head">
+          <div>
+            <p class="papers-kicker">Discharge checklist</p>
+            <p class="papers-title" id="papers-title">EU AI Act, obligations for high-risk systems</p>
+          </div>
+          <dl class="papers-fields">
+            <div><dt>Patient</dt><dd>the model</dd></div>
+            <div><dt>Date</dt><dd id="papers-date"></dd></div>
+          </dl>
+        </div>
+        <ol class="papers-rows" id="papers-rows"></ol>
+        <div class="papers-foot">
+          <div>
+            <div class="papers-count" id="papers-count" aria-live="polite">Checking the evidence of the morning</div>
+            <div class="meter" id="papers-meter" aria-hidden="true"></div>
+          </div>
+          <p class="stamp" id="papers-stamp" hidden></p>
+        </div>
+      </div>
+      <div class="open-foot">
+        <p class="question">Which evidence must a model carry before it reaches patients?</p>
+        <div class="row begin"><button class="btn primary big" type="button" data-begin>Begin</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-tiers">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">1 of 4</p>
+        <h2>Where does each system sit under the EU AI Act?</h2>
+        <p class="lead">Click a system, then a tier of the pyramid. Each card also has a menu.</p>
+        <p class="nbref">In NB7, section 1</p>
+      </div>
+      <div class="app">
+        <div class="sort" id="sort">
+          <div class="sort-left">
+            <div class="pyr-wrap">
+              <div class="pyr" id="pyr"></div>
+              <p class="sort-hint" id="sort-hint" aria-live="polite">Choose a system, then its tier.</p>
+            </div>
+            <div class="sort-ctrl-wrap">
+              <div class="row sort-ctrl">
+                <button class="btn primary" type="button" id="sort-check">Check the answers</button>
+                <button class="btn" type="button" id="sort-again" hidden>Try again</button>
+                <span class="note" id="sort-progress">0 of 8 placed</span>
+              </div>
+              <div class="score" id="sort-score" aria-live="polite" hidden><span class="v"><span id="sort-score-n">0</span> of <span id="sort-score-of">8</span></span><span class="l">placed in the right tier</span></div>
+            </div>
+          </div>
+          <ol class="systems" id="systems"></ol>
+        </div>
+        <p class="note law-note">Dates follow the AI Act as amended by the Digital Omnibus on AI, Regulation (EU) 2026/1744.</p>
+      </div>
+      <p class="takeaway" id="take-tiers" hidden>Most clinical decision support lands in the high-risk tier, which is where transparency, oversight and robustness become legal duties.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-audit">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">2 of 4</p>
+        <h2>Does the model work equally well for women and men?</h2>
+        <p class="lead">Out-of-fold predictions for all <span data-n="all"></span> Cleveland patients, decided at threshold 0.5.</p>
+        <p class="nbref">In NB7, section 2</p>
+      </div>
+      <div class="app">
+        <p class="poll-label">Compared with men, the sensitivity for women is...</p>
+        <div class="poll" id="poll-women">
+          <button type="button" data-value="higher">higher</button>
+          <button type="button" data-value="same">about the same</button>
+          <button type="button" data-value="lower">lower</button>
+        </div>
+        <div id="audit" hidden>
+          <div class="audit-top">
+            <div>
+              <div class="sens-pair" id="sens-pair"></div>
+              <p id="poll-verdict" aria-live="polite"></p>
+              <div class="row boot-row">
+                <button class="btn primary" type="button" id="resample">Resample 1,000 times</button>
+                <span class="boot-count" id="boot-count" aria-live="polite"></span>
+              </div>
+              <p class="boot-verdict" id="boot-verdict" aria-live="polite"></p>
+            </div>
+            <div class="chart paper" id="boot-chart"></div>
+          </div>
+          <div id="audit-more" hidden>
+            <table class="audit-table" id="audit-table"></table>
+            <div class="subgrid">
+              <div class="sub">
+                <h3>Flip only the recorded sex</h3>
+                <div class="flip-stats" id="flip-stats"></div>
+                <div class="chart paper" id="flip-chart"></div>
+              </div>
+              <div class="sub">
+                <h3>Remove the sex variable</h3>
+                <div class="chart paper" id="nosex-chart"></div>
+                <p class="note" id="nosex-note"></p>
+              </div>
+            </div>
+            <p class="filed" id="filed-audit" hidden></p>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" id="take-audit" hidden>With <span data-n="women"></span> women the interval is wide; the data cannot settle the question, and that uncertainty belongs in the model card.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-card">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">3 of 4</p>
+        <h2>Write the model card</h2>
+        <p class="lead">The draft holds what is usually reported. Switch on what a regulator also expects, then download the card.</p>
+        <p class="nbref">In NB7, section 3</p>
+      </div>
+      <div class="cardlab">
+        <div class="card-side">
+          <ul class="toggles" id="card-toggles" aria-label="Sections of the model card"></ul>
+          <p class="card-count" id="card-count" aria-live="polite"></p>
+          <button class="btn primary" type="button" id="card-download">Download model_card.md</button>
+          <p class="card-msg" id="card-msg" aria-live="polite"></p>
+        </div>
+        <article class="doc" id="card-doc" aria-label="Model card preview"></article>
+      </div>
+      <p class="filed" id="filed-card" hidden></p>
+      <p class="takeaway" id="take-card" hidden>A model card states limits as clearly as performance.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-dashboard">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">4 of 4</p>
+        <h2>Put the explanation in front of the clinician</h2>
+        <p class="lead">A miniature of the clinician dashboard. Read the explanation, then accept or override; every decision is logged.</p>
+        <p class="nbref">In NB7, section 4, and in dashboard/app.py</p>
+      </div>
+      <div class="monitor dash" id="dash" role="group" aria-label="Clinician dashboard">
+        <div class="dash-head"><strong>Clinician dashboard</strong><span>Teaching model on the UCI Cleveland data, not a medical device</span></div>
+        <div class="dash-grid">
+          <div class="dash-side">
+            <div class="field"><label for="dash-patient">Test patient</label><select id="dash-patient"><option value="0">Loading the model</option></select></div>
+            <div class="field">
+              <div class="control"><label for="dash-thr">Referral threshold</label><output id="dash-thr-out" for="dash-thr">0.50</output></div>
+              <input type="range" id="dash-thr" min="0.1" max="0.9" step="0.05" value="0.5">
+            </div>
+            <div aria-live="polite">
+              <span class="risk" id="dash-risk"></span>
+              <span class="risk-l">predicted risk of coronary artery disease</span>
+              <p class="decision" id="dash-decision"></p>
+              <dl class="facts">
+                <div><dt>Recorded diagnosis</dt><dd id="dash-truth"></dd></div>
+                <div><dt id="dash-flip-l">Same patient recorded with the other sex</dt><dd id="dash-flip"></dd></div>
+              </dl>
+            </div>
+          </div>
+          <div class="dash-main">
+            <p class="dash-sub">Why this risk: exact SHAP contributions against <span data-n="bg"></span> reference patients</p>
+            <div class="chart" id="dash-wf"></div>
+          </div>
+        </div>
+        <div class="dash-act">
+          <button class="btn primary" type="button" id="dash-accept">Accept recommendation</button>
+          <button class="btn" type="button" id="dash-override">Override</button>
+          <label class="sr-only" for="dash-reason">Reason for the override</label>
+          <select id="dash-reason">
+            <option value="">Reason for the override</option>
+            <option value="clinical findings not in the model">clinical findings not in the model</option>
+            <option value="patient preference">patient preference</option>
+            <option value="suspected data error">suspected data error</option>
+          </select>
+        </div>
+        <p class="dash-msg" id="dash-msg" aria-live="polite"></p>
+      </div>
+      <div class="app">
+        <div class="log-head"><h3>Audit log</h3><span class="note" id="log-count" aria-live="polite"></span></div>
+        <p class="note">Article 14 of the AI Act asks for human oversight; Article 12 asks for logs that make decisions traceable.</p>
+        <div class="log-scroll" tabindex="0" aria-label="Audit log of the decisions">
+          <table id="log-table">
+            <thead><tr><th scope="col">Time</th><th scope="col">Patient</th><th scope="col">Model risk</th><th scope="col">Threshold</th><th scope="col">Decision</th><th scope="col">Clinician action</th><th scope="col">Reason</th><th scope="col">Top three SHAP drivers</th></tr></thead>
+            <tbody id="log-body"><tr><td class="empty" colspan="8">No decisions yet. Accept or override a recommendation above.</td></tr></tbody>
+          </table>
+        </div>
+        <p class="filed" id="filed-dash" hidden></p>
+      </div>
+      <div class="app run">
+        <div>
+          <h3>Run the full dashboard</h3>
+          <p class="note">From a clone of the repository, on a computer with Python:</p>
+          <pre class="code" id="run-cmd"><code>git clone https://github.com/utkukose/xai-cars2026-NB-workshop.git
+cd xai-cars2026-NB-workshop
+pip install -r requirements.txt
+streamlit run dashboard/app.py</code></pre>
+          <div class="row"><button class="btn" type="button" id="copy-cmd">Copy the commands</button><span class="note" id="copy-msg" aria-live="polite"></span></div>
+        </div>
+        <div>
+          <p class="poll-label">Five tabs</p>
+          <ol class="tabs5">
+            <li><p><strong>Patient</strong> <span>risk, referral decision and SHAP waterfall</span></p></li>
+            <li><p><strong>What if</strong> <span>edit the values and search for a counterfactual</span></p></li>
+            <li><p><strong>Population</strong> <span>test AUROC and the SHAP summary of all test patients</span></p></li>
+            <li><p><strong>Subgroups</strong> <span>the audit with bootstrap intervals and the sex flip</span></p></li>
+            <li><p><strong>Model card</strong> <span>the card, ready to download</span></p></li>
+          </ol>
+        </div>
+      </div>
+      <p class="takeaway" id="take-dash" hidden>Oversight needs an explanation at the moment of decision and a record afterwards.</p>
+    </div>
+  </section>
+
+  <section class="bridge" id="code">
+    <div class="wrap">
+      <h2>Now open NB7</h2>
+      <p class="lead">The notebook builds the risk map, the audit with bootstrap intervals and the model card in code, and launches a mini dashboard.</p>
+      <div class="bridge-steps">
+        <div><strong>Audit</strong>Bootstrap intervals and the sex-flip probe.</div>
+        <div><strong>Document</strong>Generate and save the model card.</div>
+        <div><strong>Oversee</strong>The ipywidgets dashboard and the Streamlit app.</div>
+      </div>
+      <div class="nb-buttons" data-notebooks="NB7"></div>
+    </div>
+  </section>
+
+  <section data-next="lab"></section>
+</main>
+<footer data-footer data-credits="Data: UCI Cleveland heart disease (A. Janosi, W. Steinbrunn, M. Pfisterer, R. Detrano), CC BY 4.0. Regulatory dates checked on 28 September 2026."></footer>
+<script src="assets/site-data.js"></script>
+<script src="assets/lab-core.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/part4.js"></script>
+</body>
+</html>

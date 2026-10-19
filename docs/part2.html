@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The XAI toolkit, Part 2: Explainable AI in Medical Systems, IEEE CARS 2026</title>
+<meta name="description" content="Part 2 of the IEEE CARS 2026 workshop on explainable AI in medical systems: glass-box models, exact Shapley values, LIME, counterfactuals, a deletion test and a model randomisation test on real heart disease data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  [hidden] { display: none !important; }
+  body { --zmid: color-mix(in oklab, var(--muted) 45%, var(--panel)); }
+
+  /* cold open: the black box and the periodic table of methods */
+  .p2-hero h1 { max-width: none; }
+  .stage { margin-top: 30px; }
+  .box-row { display: flex; flex-wrap: wrap; gap: 26px 40px; align-items: center; }
+  .blackbox { position: relative; width: min(290px, 78vw); aspect-ratio: 1; border-radius: 20px; color: var(--monitor-ink);
+    background: radial-gradient(120% 95% at 28% 18%, var(--monitor-panel), var(--monitor-bg) 72%);
+    box-shadow: 0 0 0 2px var(--monitor-edge), 0 30px 60px -30px color-mix(in srgb, var(--monitor-bg) 75%, transparent);
+    display: grid; place-content: center; text-align: center; overflow: hidden; }
+  :root[data-theme="dark"] .blackbox { box-shadow: 0 0 0 2px var(--monitor-edge), 0 0 70px -12px color-mix(in srgb, var(--violet) 40%, transparent); }
+  .blackbox .bb-label { color: var(--monitor-muted); font-size: 0.95rem; }
+  .blackbox .bb-risk { font-size: clamp(3.6rem, 10vw, 5.4rem); font-weight: 700; line-height: 1; letter-spacing: -0.02em; margin: 6px 0 8px; }
+  .blackbox .bb-sub { color: var(--monitor-muted); font-size: 0.95rem; }
+  .blackbox svg { position: absolute; left: 0; right: 0; bottom: 14px; width: 100%; height: 40px; }
+  .blackbox svg polyline { fill: none; stroke: var(--monitor-violet); stroke-width: 2; stroke-linejoin: round; opacity: 0.55; }
+  .blackbox.opening { animation: lid 0.32s ease-in forwards; }
+  @keyframes lid { 40% { transform: scale(1.03); filter: brightness(1.5); } to { transform: scale(0.9); opacity: 0; } }
+  .box-copy { max-width: 44ch; }
+  .box-copy .claim { font-size: clamp(1.4rem, 2.6vw, 2rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.015em; margin: 0 0 10px; }
+  .box-copy .btn { margin-top: 10px; }
+  .p2-hero .question { margin-top: 40px; }
+
+  .ptable { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  .pgroup { display: flex; flex-direction: column; gap: 7px; }
+  .g1 { --g: var(--teal); } .g2 { --g: var(--amber); } .g3 { --g: var(--violet); } .g4 { --g: var(--red); }
+  .g5 { --g: color-mix(in oklab, var(--teal) 40%, var(--violet)); } .g6 { --g: var(--ink); } .g7 { --g: color-mix(in oklab, var(--red) 50%, var(--violet)); }
+  .phead { border-top: 5px solid var(--g); padding-top: 7px; font-weight: 700; font-size: 0.9rem; line-height: 1.25; min-height: 4.3em; }
+  .phead span { display: block; font-weight: 400; color: var(--muted); font-size: 0.8rem; }
+  .tile { position: relative; display: block; width: 100%; text-align: left; font: inherit; color: var(--ink); cursor: pointer; min-height: 74px; padding: 20px 10px 8px;
+    background: color-mix(in oklab, var(--g) 9%, var(--panel)); border: 1.5px solid color-mix(in oklab, var(--g) 38%, var(--panel)); border-radius: 8px; }
+  .tile:hover { background: color-mix(in oklab, var(--g) 18%, var(--panel)); }
+  .tile[aria-pressed="true"] { border-color: var(--g); box-shadow: inset 0 0 0 1.5px var(--g); background: color-mix(in oklab, var(--g) 20%, var(--panel)); }
+  .tile .no { position: absolute; top: 4px; left: 9px; font-size: 0.7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tile .live { position: absolute; top: 8px; right: 9px; width: 9px; height: 9px; border-radius: 50%; background: var(--g); }
+  .tile .sym { display: block; font-size: 1.55rem; font-weight: 700; line-height: 1; letter-spacing: -0.01em; }
+  .tile .nm { display: block; font-size: 0.8rem; line-height: 1.2; color: var(--muted); margin-top: 5px; }
+  .tile-count { font-weight: 700; margin: 0 0 12px; }
+  .tile-count:focus { outline: none; }
+  .tile-info .where a { white-space: nowrap; }
+  .toolkit-key { display: flex; flex-wrap: wrap; gap: 6px 16px; align-items: center; margin: 14px 0 0; }
+  .live-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--ink); margin-right: 6px; }
+  .tile-info { margin: 10px 0 0; min-height: 3.1em; font-size: 1.05rem; max-width: 76ch; }
+  .tile-info .where { color: var(--muted); }
+
+  /* shared pieces of the stations */
+  .patient-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 0 0 14px; }
+  .patient-bar label { font-weight: 700; }
+  .patient-bar select { flex: 0 1 auto; min-width: 0; max-width: 100%; }
+  .chip.edited { border-color: var(--amber); color: var(--ink); }
+  #bar-2 [data-role="risk"] { display: none; }
+  .pills { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+  .pills button { font: inherit; font-size: 0.92rem; color: var(--ink); background: var(--panel); border: 1.5px solid var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+  .pills button[aria-pressed="true"] { background: var(--ink); color: var(--paper); font-weight: 700; }
+  .app-title { margin: 0 0 4px; font-size: 1.15rem; }
+  .app h3:first-child { margin-top: 0; }
+  .busy { opacity: 0.4; transition: opacity 0.2s; }
+  .status { min-height: 1.5em; color: var(--muted); font-size: 0.92rem; margin: 4px 0; }
+  .status.on::before { content: ""; display: inline-block; width: 11px; height: 11px; margin-right: 8px; vertical-align: -1px; border-radius: 50%;
+    border: 2px solid var(--accent); border-right-color: transparent; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .risk-readout { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin: 0 0 4px; }
+  .risk-readout .big { font-size: 3rem; font-weight: 700; line-height: 1; }
+  .big.hi { color: var(--red); } .big.lo { color: var(--teal); }
+  .sum-line { font-weight: 700; margin: 10px 0 2px; }
+  .whatif { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 18px; margin: 16px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .whatif .control { flex-wrap: wrap; font-size: 0.95rem; gap: 2px 10px; }
+  .whatif output { color: var(--muted); font-weight: 400; }
+  .scroll-x { overflow-x: auto; }
+  #tree svg { min-width: 540px; }
+  .stats.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat .v.small { font-size: 1.3rem; }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+  .chiprow .k { font-weight: 700; min-width: 7.5em; }
+  .chip.on { border-color: var(--accent); color: var(--ink); font-weight: 700; background: color-mix(in oklab, var(--accent) 14%, var(--panel)); }
+  .changes { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 6px; }
+  .change { border: 1.5px solid var(--ink); border-radius: 999px; padding: 6px 14px; font-variant-numeric: tabular-nums; }
+  .to-part3 { border-left: 6px solid var(--amber); padding: 4px 0 4px 14px; font-weight: 700; font-size: 1.1rem; margin-top: 12px; }
+  .to-part3 a { font-weight: 400; color: var(--muted); }
+  .teaser { margin-top: 22px; background: var(--panel); border: 1px solid var(--line); border-left: 6px solid var(--violet); border-radius: 10px; padding: 18px 22px; }
+  .teaser h3 { margin: 0 0 6px; }
+  .teaser p { max-width: 80ch; }
+
+  /* chart vocabulary used only on this page */
+  svg .edge { fill: none; stroke: var(--muted); stroke-width: 1.6; opacity: 0.45; }
+  svg .edge.on { stroke: var(--violet); stroke-width: 4; opacity: 1; }
+  svg .node { fill: var(--panel); stroke: var(--muted); stroke-width: 1.2; }
+  svg .node.on { stroke: var(--violet); stroke-width: 2.6; }
+  svg .leaf-hi { fill: color-mix(in oklab, var(--red) 13%, var(--panel)); stroke: color-mix(in oklab, var(--red) 55%, var(--panel)); stroke-width: 1.2; }
+  svg .leaf-lo { fill: color-mix(in oklab, var(--teal) 13%, var(--panel)); stroke: color-mix(in oklab, var(--teal) 55%, var(--panel)); stroke-width: 1.2; }
+  svg .leaf-hi.on, svg .leaf-lo.on { stroke: var(--violet); stroke-width: 3; }
+  svg .dot { stroke: var(--panel); stroke-width: 0.9; }
+  svg .zn2 { fill: var(--violet); } svg .zn1 { fill: color-mix(in oklab, var(--violet) 55%, var(--zmid)); } svg .z0 { fill: var(--zmid); }
+  svg .zp1 { fill: color-mix(in oklab, var(--amber) 55%, var(--zmid)); } svg .zp2 { fill: var(--amber); }
+  svg .ring { fill: none; stroke: var(--ink); stroke-width: 2.2; }
+  svg .ghost { stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; opacity: 0.6; }
+  svg .connector { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
+  svg .zone-lo { fill: color-mix(in oklab, var(--teal) 18%, var(--panel)); }
+  svg .zone-hi { fill: color-mix(in oklab, var(--red) 18%, var(--panel)); }
+  svg .mk-before { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+  svg .mk-after { stroke: var(--panel); stroke-width: 2; }
+  svg .slide { transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  svg .race-row { transition: transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  svg .f-panel { fill: var(--panel); }
+  svg .halo { paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+  svg .head { stroke: var(--panel); stroke-width: 2; }
+  @media (max-width: 980px) {
+    .ptable { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+    .pgroup { display: grid; grid-template-columns: repeat(auto-fill, minmax(108px, 1fr)); gap: 7px; }
+    .phead { grid-column: 1 / -1; min-height: 0; }
+    .whatif { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .stats.three { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .risk-readout .big { font-size: 2.5rem; }
+    .chiprow .k { min-width: 0; width: 100%; }
+  }
+</style>
+</head>
+<body data-page="p2" data-part="p2">
+<header id="site-top"></header>
+<main>
+  <section class="coldopen grid-bg p2-hero" aria-labelledby="title">
+    <div class="wrap">
+      <p class="part-tag"><strong>Part 2 · Examination</strong><span>10:20 to 10:45</span></p>
+      <h1 id="title">The XAI toolkit</h1>
+      <div class="stage" id="stage">
+        <div class="box-row" id="box-row">
+          <div class="blackbox" id="blackbox" role="img" aria-label="A black box showing one predicted risk">
+            <span class="bb-label">predicted risk</span>
+            <span class="bb-risk" id="bb-risk">0.00</span>
+            <span class="bb-sub" id="bb-sub"></span>
+            <svg viewBox="0 0 300 40" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,26 92,26 100,20 108,26 128,26 134,4 142,38 148,22 156,26 176,26 186,18 196,26 300,26"/></svg>
+          </div>
+          <div class="box-copy">
+            <p class="claim">One patient, one number, no reasons.</p>
+            <p class="muted" id="box-note"></p>
+            <button class="btn primary big" type="button" id="open-box">Open the box</button>
+          </div>
+        </div>
+        <div class="toolkit" id="toolkit" hidden>
+          <p class="tile-count" id="tile-count" tabindex="-1"></p>
+          <div class="ptable" id="ptable"></div>
+          <p class="note toolkit-key"><span><span class="live-dot" aria-hidden="true"></span>Live on this page</span><span>Select a tile for the question it answers and where to find it.</span></p>
+          <p class="tile-info" id="tile-info" aria-live="polite"></p>
+        </div>
+      </div>
+      <p class="question">Which explanation answers which question, and can it be trusted?</p>
+      <div class="row begin"><button class="btn big" type="button" id="begin">Begin</button></div>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-glass">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">1 of 6</p>
+        <h2>Can the model itself be read?</h2>
+        <p class="lead">Four glass-box models and one black box, trained on the same <span data-fill="ntrain"></span> patients and tested on the same <span data-fill="ntest"></span>.</p>
+        <p class="nbref">In NB2, section 2</p>
+      </div>
+      <div class="app">
+        <p class="poll-label" id="q-winner">On this data, which wins: the black-box gradient boosting model or a glass-box model?</p>
+        <div class="poll" id="poll-winner" role="group" aria-labelledby="q-winner">
+          <button type="button" data-value="black-box">The black box</button>
+          <button type="button" data-value="glass-box">A glass box</button>
+          <button type="button" data-value="tie">A tie</button>
+        </div>
+        <div class="chart" id="race"></div>
+        <p class="note" id="race-note" aria-live="polite"></p>
+      </div>
+      <div class="app">
+        <div id="bar-1"></div>
+        <div class="grid-2">
+          <div>
+            <h3 class="app-title">A decision tree of depth 3</h3>
+            <p class="note">Each split is a question; the leaf gives the share of training patients with disease.</p>
+            <div class="chart paper scroll-x" id="tree"></div>
+            <p class="note" id="tree-note" aria-live="polite"></p>
+          </div>
+          <div>
+            <h3 class="app-title">A GAM: one curve per variable</h3>
+            <div class="pills" id="gam-pills" role="group" aria-label="Variable shown by the GAM"></div>
+            <div class="chart paper" id="gam"></div>
+            <p class="note" id="gam-note" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" hidden>On this data the glass boxes match or beat the black box, and their explanations are the model itself.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-shap">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">2 of 6</p>
+        <h2>Who gets the credit for this patient's risk?</h2>
+        <p class="lead">Shapley values share one patient's predicted risk among the <span data-fill="nvar"></span> variables. Edit three of them and watch the credit move.</p>
+        <p class="nbref">In NB2, sections 3 and 4</p>
+      </div>
+      <div class="grid-2">
+        <div class="app">
+          <div id="bar-2"></div>
+          <div class="risk-readout" aria-live="polite"><span class="big" id="risk-2"></span><span class="muted" id="risk-2-label"></span></div>
+          <div class="chart paper" id="waterfall"></div>
+          <p class="status" id="status-2" aria-live="polite"></p>
+          <p class="sum-line">The contributions add up exactly: from the average risk of the reference patients to this patient's risk.</p>
+          <p class="note num" id="sum-check" aria-live="polite"></p>
+          <div class="whatif" id="whatif"></div>
+          <button class="btn" type="button" id="restore-2">Restore recorded values</button>
+        </div>
+        <div class="app">
+          <h3 class="app-title">Every test patient at once</h3>
+          <p class="note">One dot per patient and variable: the SHAP values of the <span data-fill="ntest"></span> test patients from NB2.</p>
+          <div class="chart" id="swarm"></div>
+          <p class="note" id="swarm-note" aria-live="polite"></p>
+        </div>
+      </div>
+      <p class="takeaway" hidden>Shapley values split the prediction fairly among the variables; for small models they can be computed exactly.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-lime">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">3 of 6</p>
+        <h2>Ask LIME twice</h2>
+        <p class="lead">LIME explains one patient by fitting a linear model to random perturbations around it. Run it more than once.</p>
+        <p class="nbref">In NB2, section 4</p>
+      </div>
+      <div class="app">
+        <p class="poll-label" id="q-lime">Run LIME twice on the same patient. Will the top five variables be the same?</p>
+        <div class="poll" id="poll-lime" role="group" aria-labelledby="q-lime">
+          <button type="button" data-value="always">Always</button>
+          <button type="button" data-value="usually">Usually</button>
+          <button type="button" data-value="not-necessarily">Not necessarily</button>
+        </div>
+        <div id="bar-3"></div>
+        <div class="grid-2">
+          <div>
+            <div class="row"><button class="btn primary" type="button" id="lime-run">Run LIME</button><span class="note" id="lime-seed"></span></div>
+            <div class="chart paper" id="lime-chart"></div>
+            <p class="note">Bars: this run. Dark ticks: the previous run. Bold names: this run's top five.</p>
+          </div>
+          <div>
+            <div class="stats three" id="lime-stats" aria-live="polite"></div>
+            <h3>Top-five overlap, run after run</h3>
+            <div class="chart paper" id="lime-history"></div>
+            <p class="note">Each run draws <span data-fill="nlime"></span> perturbed patients from <span data-fill="npool"></span> training patients with a new seed.</p>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" hidden>LIME is a random sample around the patient; report its spread, or use an exact method when the model allows it.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-cf">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">4 of 6</p>
+        <h2>What is the smallest change that flips the decision?</h2>
+        <p class="lead">A counterfactual is the nearest plausible patient for whom the model predicts no disease.</p>
+        <p class="nbref">In NB2, section 5</p>
+      </div>
+      <div class="app">
+        <div id="bar-4"></div>
+        <button class="btn primary" type="button" id="cf-run">Find the counterfactual</button>
+        <div class="chart" id="gauge"></div>
+        <div class="chiprow" id="cf-may"><span class="k">May change</span></div>
+        <div class="chiprow" id="cf-fixed"><span class="k">Fixed</span></div>
+        <p class="note" id="cf-rule"></p>
+        <div id="cf-result" aria-live="polite"></div>
+      </div>
+      <p class="takeaway" hidden>A counterfactual names the smallest plausible change that flips a decision; a very small one reveals a sharp step in the model.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="s-trust">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">5 of 6</p>
+        <h2>Can the explanation be trusted?</h2>
+        <p class="lead">Remove the variables an explanation ranks first and watch the risk. A faithful ranking makes it fall fast.</p>
+        <p class="nbref">In NB2, section 7</p>
+      </div>
+      <div class="app">
+        <p class="poll-label" id="q-deletion">Which ordering makes the risk fall fastest?</p>
+        <div class="poll" id="poll-deletion" role="group" aria-labelledby="q-deletion">
+          <button type="button" data-value="shap">SHAP</button>
+          <button type="button" data-value="lime">LIME</button>
+          <button type="button" data-value="random">Random</button>
+        </div>
+        <div id="bar-5"></div>
+        <div class="row"><button class="btn primary" type="button" id="del-run">Run the deletion test</button><span class="status" id="status-5" aria-live="polite"></span></div>
+        <div class="grid-2">
+          <div class="chart paper" id="del-chart"></div>
+          <div>
+            <div class="stats" id="del-stats" aria-live="polite"></div>
+            <p class="note" id="del-note"></p>
+          </div>
+        </div>
+      </div>
+      <p class="takeaway" hidden>Faithfulness can be measured: a good explanation names the variables the model actually uses.</p>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="s-sanity">
+    <div class="wrap">
+      <div class="station-head">
+        <p class="station-index">6 of 6</p>
+        <h2>Does the explanation depend on the model at all?</h2>
+        <p class="lead">Shuffle the leaf values of more and more trees until the model has learned nothing. A real explanation should notice.</p>
+        <p class="nbref">In NB3, section 4, the sanity check of Adebayo et al. [1]. [1] J. Adebayo, J. Gilmer, M. Muelly, I. Goodfellow, M. Hardt, and B. Kim, "Sanity checks for saliency maps," in Advances in Neural Information Processing Systems 31, 2018.</p>
+      </div>
+      <div class="app">
+        <div id="bar-6"></div>
+        <div class="row">
+          <div class="pills" id="lvl-pills" role="group" aria-label="Share of trees with shuffled leaf values"></div>
+          <button class="btn primary" type="button" id="lvl-next">Randomise 25 percent more</button>
+        </div>
+        <p class="status" id="status-6" aria-live="polite"></p>
+        <div class="grid-2">
+          <div>
+            <div class="chart paper" id="san-chart"></div>
+            <div class="stats" id="san-stats" aria-live="polite"></div>
+          </div>
+          <div>
+            <h3 class="app-title">Importance per variable, scaled to the largest</h3>
+            <div class="chart" id="san-bars"></div>
+            <p class="note">The input-only explanation ranks variables by how far this patient's values lie from the training mean, in standard deviations. It never looks at the model.</p>
+          </div>
+        </div>
+      </div>
+      <div class="teaser">
+        <h3>The same test on chest X-rays</h3>
+        <p>NB3 runs the same test on real paediatric chest X-rays (PneumoniaMNIST) with Grad-CAM, gradients, SmoothGrad, integrated gradients and occlusion, then measures faithfulness with a deletion test and shows that an invisible change flips both the prediction and its heat map.</p>
+        <a class="chip" id="nb3-link" href="#" target="_blank" rel="noopener">Open NB3 in Colab</a>
+      </div>
+      <p class="takeaway" hidden>An explanation that barely changes when the model is destroyed was never explaining the model.</p>
+    </div>
+  </section>
+
+  <section class="bridge" id="code">
+    <div class="wrap">
+      <h2>Now open NB2 and NB3</h2>
+      <p class="lead">NB2 runs more than twenty methods on the same patients and measures them; NB3 carries the toolkit to chest X-rays.</p>
+      <div class="bridge-steps">
+        <div><strong>NB2 · tabular</strong>Glass boxes, SHAP, ALE, SAGE, LIME, MAPLE, integrated gradients, counterfactuals, Anchors, GEMEX and the evaluation of explanations.</div>
+        <div><strong>NB3 · imaging</strong>Grad-CAM and four other heat maps on real chest X-rays, the sanity check, a deletion test and FGSM.</div>
+        <div><strong>Try</strong>Change the patient, the background or the number of LIME samples, and run the cells again.</div>
+      </div>
+      <div class="nb-buttons" data-notebooks="NB2,NB3"></div>
+    </div>
+  </section>
+  <section data-next="break"></section>
+</main>
+<footer data-footer data-credits="Data: UCI Cleveland heart disease (A. Janosi, W. Steinbrunn, M. Pfisterer, R. Detrano), CC BY 4.0. Models and explanations as in NB2."></footer>
+<script src="assets/site-data.js"></script>
+<script src="assets/lab-core.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/part2.js"></script>
+</body>
+</html>

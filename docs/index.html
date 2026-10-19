@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Explainable AI in Medical Systems, IEEE CARS 2026</title>
+<meta name="description" content="Start page of the IEEE CARS 2026 workshop on explainable AI in medical systems: four interactive parts, seven Colab notebooks and the XAI Lab.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  .start-hero h1 { max-width: 18ch; }
+  .start-hero .subtitle { font-size: clamp(1.25rem, 2.4vw, 1.75rem); margin: 14px 0 0; color: var(--muted); max-width: 40ch; }
+  .journey { margin: 34px -8px 6px; }
+  .journey svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .journey .seg { fill: none; stroke-width: 4; stroke-linejoin: round; stroke-linecap: round; }
+  .journey .seg.pause { stroke: var(--muted); stroke-dasharray: 2 10; stroke-width: 3; }
+  .journey .stop rect { fill: transparent; }
+  .journey .stop .jtime { fill: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .journey .stop .jlabel { font-size: 18px; font-weight: 700; }
+  .journey .stop .jrole { fill: var(--muted); font-size: 15px; }
+  .journey .stop:hover .jlabel, .journey .stop:focus .jlabel { fill: var(--accent); text-decoration: underline; }
+  .journey .stop .seen { fill: var(--muted); font-size: 13px; }
+  .start-hero .claim { font-size: clamp(1.5rem, 3vw, 2.3rem); font-weight: 700; letter-spacing: -0.015em; margin: 26px 0 8px; max-width: 30ch; }
+  .start-hero .venue { margin-top: 30px; color: var(--muted); }
+  .flow { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; counter-reset: none; }
+  .flow li { padding: 8px 28px 8px 0; position: relative; }
+  .flow li + li { padding-left: 28px; border-left: 1px solid var(--line); }
+  .flow .n { display: inline-grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--ink); color: var(--paper); font-weight: 700; font-size: 1.2rem; }
+  .flow h3 { font-size: 1.5rem; margin: 16px 0 6px; }
+  .flow p { color: var(--muted); max-width: 32ch; }
+  .parts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .pcard { --c: var(--ink); background: var(--panel); border: 1px solid var(--line); border-top: 6px solid var(--c); border-radius: 10px; padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .pcard .meta { color: var(--muted); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .pcard .meta strong { color: var(--c); }
+  .pcard h3 { font-size: 1.4rem; margin: 0; }
+  .pcard p { margin: 0; }
+  .pcard .nbs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 8px; }
+  .pcard .go { align-self: flex-start; }
+  .keys { display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; margin: 0; }
+  .keys dt { white-space: nowrap; }
+  .keys dd { margin: 0; color: var(--muted); }
+  @media (max-width: 980px) {
+    .flow { grid-template-columns: minmax(0, 1fr); }
+    .flow li, .flow li + li { padding: 12px 0; border-left: 0; border-top: 1px solid var(--line); }
+  }
+</style>
+</head>
+<body data-page="start" data-part="start">
+<header id="site-top"></header>
+<main>
+  <section class="coldopen grid-bg start-hero" aria-labelledby="title">
+    <div class="wrap">
+      <p class="part-tag"><strong>IEEE CARS 2026 workshop</strong><span>28 October 2026, 10:00 to 12:00, online session</span></p>
+      <h1 id="title">Explainable AI in medical systems</h1>
+      <p class="subtitle">From black box models to reliable clinical decision support</p>
+      <div class="journey" id="journey"></div>
+      <p class="claim">Today the patient is the model.</p>
+      <p class="lead">It is admitted with an impressive accuracy figure, examined with more than twenty explanation methods, stress-tested by three attackers, and discharged only with the papers a regulator expects.</p>
+      <div class="row begin"><button class="btn primary big" type="button" data-begin>See how the session works</button><a class="btn big" href="part1.html">Go to Part 1</a></div>
+      <p class="venue">Organised by the Center for Cyber Security Research (C2SR), University of North Dakota, Grand Forks, ND, USA. Prof. Dr. Utku Köse.</p>
+    </div>
+  </section>
+
+  <section class="station" data-station id="flow">
+    <div class="wrap">
+      <div class="station-head">
+        <h2>Every part follows the same three steps</h2>
+        <p class="lead">First the idea, then the code, then everything on one bench.</p>
+      </div>
+      <ol class="flow">
+        <li><span class="n">1</span><h3>Explore</h3><p>A short page with live models and real patient data. Make a prediction first, then reveal what happens.</p></li>
+        <li><span class="n">2</span><h3>Code</h3><p>The matching Colab notebook carries the full analysis. Run it, change a parameter, break it on purpose.</p></li>
+        <li><span class="n">3</span><h3>Bring it together</h3><p>The XAI Lab puts every tool of the morning on one bench and closes with a debrief of the session.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="station alt" data-station id="parts">
+    <div class="wrap">
+      <div class="station-head">
+        <h2>Four parts and one lab</h2>
+        <p class="lead">Times follow the official conference programme. Each card opens the page for that part; the notebook buttons open Colab directly.</p>
+      </div>
+      <div class="parts" id="part-cards"></div>
+    </div>
+  </section>
+
+  <section class="station" data-station id="ready">
+    <div class="wrap grid-2">
+      <div>
+        <h2>Nothing to install</h2>
+        <p class="lead">Every page runs its models in the browser, and nothing typed into a page leaves it. The notebooks open in Google Colab with a Google account; each one installs what it needs and downloads its data from the original public sources. Every dataset used today is real and openly available.</p>
+        <p class="note">Participants who prefer not to sign in to Colab can follow every part on these pages and in the XAI Lab, and read the notebooks on GitHub.</p>
+      </div>
+      <div class="app">
+        <h3 style="margin-top:0">For the presenter</h3>
+        <dl class="keys">
+          <dt><kbd>→</kbd> <kbd>←</kbd></dt><dd>next or previous station on a page</dd>
+          <dt><kbd>]</kbd> <kbd>[</kbd></dt><dd>next or previous part</dd>
+          <dt><kbd>T</kbd></dt><dd>paper view or monitor view</dd>
+          <dt><kbd>F</kbd></dt><dd>full screen</dd>
+        </dl>
+        <p class="note" style="margin-top:14px">Progress and answers are kept only in this browser and feed the debrief at the end of the XAI Lab.</p>
+      </div>
+    </div>
+  </section>
+
+  <section data-next="p1"></section>
+</main>
+<footer data-footer data-credits="Data used in the workshop: Wisconsin Diagnostic Breast Cancer and UCI Cleveland heart disease (UCI Machine Learning Repository), PneumoniaMNIST (MedMNIST v2), CGM recordings of Weinstock et al. (2016) as distributed by GlucoBench, the PhysioNet/Computing in Cardiology Challenge 2019 and the MIT-BIH Atrial Fibrillation Database (PhysioNet)."></footer>
+<script src="assets/site.js"></script>
+<script>
+(function () {
+  "use strict";
+  const S = window.XAISite, P = S.PAGES;
+  const colour = { start: "var(--ink)", p1: "var(--red)", p2: "var(--violet)", "break": "var(--muted)", p3: "var(--amber)", p4: "var(--teal)", lab: "var(--ink)" };
+  const seen = S.store.get("visited", {});
+
+  /* The morning as one rhythm strip: one complex per stop, coloured by part. */
+  const W = 1200, H = 236, y = 128, x0 = 86, step = (W - 2 * x0) / (P.length - 1);
+  const svg = S.svgRoot(document.getElementById("journey"), W, H, "The workshop as a rhythm strip, from the start page through four parts and a break to the XAI Lab");
+  const segs = [];
+  P.forEach(function (p, i) {
+    const x = x0 + i * step, a = i === 0 ? 0 : x - step / 2, b = i === P.length - 1 ? W : x + step / 2;
+    let d;
+    if (p.id === "break") d = "M" + a + " " + y + " H" + b;
+    else if (p.id === "start") d = "M" + a + " " + y + " H" + (x - 10) + " q10 -16 20 0 H" + b;
+    else {
+      const big = p.id === "lab" ? 1.25 : 1;
+      d = "M" + a + " " + y + " H" + (x - 40) + " l9 -12 l9 12 H" + (x - 6) + " l7 " + (-64 * big) + " l11 " + (104 * big) + " l6 " + (-40 * big) +
+        " H" + (x + 30) + " q11 -24 22 0 H" + b;
+    }
+    segs.push(S.add(svg, "path", { d: d, class: "seg" + (p.id === "break" ? " pause" : ""), style: p.id === "break" ? "" : "stroke:" + colour[p.id] }));
+    const g = S.add(svg, "a", { href: p.href, class: "stop", "aria-label": p.label + ": " + p.title + ", " + p.when });
+    S.add(g, "rect", { x: x - step / 2 + 4, y: 0, width: step - 8, height: H });
+    S.add(g, "text", { x: x, y: 26, "text-anchor": "middle", class: "jtime" }, p.when.split(" to ")[0]);
+    S.add(g, "text", { x: x, y: H - 34, "text-anchor": "middle", class: "jlabel" }, p.id === "lab" ? "XAI Lab" : p.label);
+    S.add(g, "text", { x: x, y: H - 12, "text-anchor": "middle", class: "jrole" }, p.role || (p.id === "break" ? "15 minutes" : "now"));
+  });
+  if (!S.reduceMotion) {
+    segs.forEach(function (s, i) {
+      const len = s.getTotalLength ? s.getTotalLength() : 400;
+      s.style.strokeDasharray = len;
+      s.style.strokeDashoffset = len;
+      s.style.transition = "stroke-dashoffset 0.55s linear " + (0.25 + i * 0.5) + "s";
+    });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { segs.forEach(function (s) { s.style.strokeDashoffset = 0; }); }); });
+  }
+
+  /* Part cards. */
+  const box = document.getElementById("part-cards");
+  P.filter(function (p) { return p.id !== "start"; }).forEach(function (p) {
+    const card = S.el("article", { class: "pcard", style: "--c:" + colour[p.id] });
+    const label = p.id === "lab" ? "Finale" : p.id === "break" ? "Break" : p.label;
+    card.innerHTML = '<div class="meta"><strong>' + label + (p.role ? " · " + p.role : "") + '</strong><span class="num">' + p.when + "</span></div>" +
+      "<h3>" + p.title + "</h3><p>" + p.question + "</p>" + (seen[p.id] ? '<p class="note">Visited in this browser</p>' : "");
+    const go = S.el("a", { class: "btn primary go", href: p.href, style: "background:" + colour[p.id] + ";border-color:" + colour[p.id] },
+      p.id === "break" ? "Open the break screen" : p.id === "lab" ? "Open the XAI Lab" : "Explore " + p.label);
+    card.appendChild(go);
+    if (p.nbs) {
+      const nbs = S.el("div", { class: "nbs" });
+      p.nbs.forEach(function (nb) {
+        nbs.appendChild(S.el("a", { class: "chip", href: S.colabUrl(nb), target: "_blank", rel: "noopener" }, nb + " in Colab"));
+      });
+      card.appendChild(nbs);
+    }
+    box.appendChild(card);
+  });
+})();
+</script>
+</body>
+</html>

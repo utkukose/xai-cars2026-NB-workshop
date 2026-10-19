@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>XAI Lab: the ward round, IEEE CARS 2026 XAI workshop</title>
+<meta name="description" content="Finale of the IEEE CARS 2026 workshop on explainable AI in medical systems: every tool of the morning on one bench, a subgroup audit and a discharge summary of the session.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23C62D3A'/%3E%3Cpolyline points='6,36 20,36 26,18 34,48 40,30 44,36 58,36' fill='none' stroke='white' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/site.css">
+<style>
+  /* ---------- page accent and part colours ---------- */
+  [data-part="p1"] { --pc: var(--red); }
+  [data-part="p2"] { --pc: var(--violet); }
+  [data-part="p3"] { --pc: var(--amber); }
+  [data-part="p4"] { --pc: var(--teal); }
+  [data-part="fin"] { --pc: var(--ink); }
+
+  /* ---------- opening band and ward round checklist ---------- */
+  .lab-ward { padding: clamp(34px, 5vw, 58px) 0 clamp(30px, 4vw, 46px); border-bottom: 1px solid var(--line); scroll-margin-top: 66px; }
+  .lab-ward h1 { font-size: clamp(2.3rem, 5.2vw, 3.9rem); }
+  .lab-ward .lead { margin: 14px 0 0; }
+  .wr { margin-top: clamp(26px, 3.2vw, 38px); }
+  .wr-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-bottom: 12px; }
+  .wr-head h2 { font-size: 1.3rem; letter-spacing: -0.01em; }
+  .wr-count { margin: 0; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .wr-bar { display: inline-flex; gap: 4px; }
+  .wr-bar i { width: 24px; height: 6px; border-radius: 3px; background: var(--line); }
+  .wr-bar i.on { background: var(--pc); }
+  .wr-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .wr-task a { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; row-gap: 3px; height: 100%; padding: 12px 14px 13px; background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--pc); border-radius: 8px; text-decoration: none; color: var(--ink); }
+  .wr-task a:hover { border-color: var(--pc); }
+  .wr-box { grid-row: 1 / span 2; width: 26px; height: 26px; margin-top: 1px; border: 2px solid var(--pc); border-radius: 6px; display: grid; place-items: center; background: var(--panel); }
+  .wr-box svg { width: 18px; height: 18px; display: block; }
+  .wr-box path { fill: none; stroke: var(--on-accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 22; stroke-dashoffset: 22; transition: stroke-dashoffset 0.35s ease-out 0.1s; }
+  .wr-task.done .wr-box { background: var(--pc); }
+  .wr-task.done .wr-box path { stroke-dashoffset: 0; }
+  .wr-task.just .wr-box { animation: wr-pop 0.45s ease-out; }
+  @keyframes wr-pop { 40% { transform: scale(1.28); } }
+  .wr-meta { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 0.84rem; color: var(--muted); line-height: 1.3; }
+  .wr-meta strong { color: var(--pc); }
+  .wr-text { font-size: 0.98rem; line-height: 1.35; }
+
+  /* ---------- tabs ---------- */
+  .lab-bench { padding: 30px 0 clamp(56px, 7vw, 88px); scroll-margin-top: 66px; }
+  .lab-tabs { display: flex; gap: 2px; overflow-x: auto; border-bottom: 2px solid var(--ink); scrollbar-width: thin; }
+  .lab-tab { flex: none; font: inherit; color: var(--muted); background: transparent; border: 0; border-radius: 6px 6px 0 0; padding: 10px 16px 13px; text-align: left; white-space: nowrap; position: relative; cursor: pointer; }
+  .lab-tab:hover { color: var(--ink); background: color-mix(in srgb, var(--pc) 8%, transparent); }
+  .lab-tab .tp { display: block; font-size: 0.78rem; font-weight: 700; color: var(--pc); line-height: 1.3; }
+  .lab-tab .tn { display: inline-flex; align-items: center; gap: 7px; font-size: 1.02rem; }
+  .lab-tab .tk { display: none; width: 17px; height: 17px; border-radius: 50%; background: var(--pc); place-items: center; }
+  .lab-tab .tk svg { width: 11px; height: 11px; display: block; }
+  .lab-tab .tk path { fill: none; stroke: var(--on-accent); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  .lab-tab.done .tk { display: inline-grid; }
+  .lab-tab[aria-selected="true"] { color: var(--ink); font-weight: 700; }
+  .lab-tab[aria-selected="true"]::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: -2px; height: 5px; border-radius: 3px 3px 0 0; background: var(--pc); }
+
+  /* ---------- panels ---------- */
+  .lab-panel { --accent: var(--pc); padding: 30px 0 0; }
+  .lab-intro { max-width: 790px; margin-bottom: 22px; }
+  .lab-intro h2 { font-size: clamp(1.55rem, 2.7vw, 2.1rem); }
+  .lab-intro .lead { font-size: 1.08rem; margin: 10px 0 0; }
+  .lab-intro .nbref { margin-top: 10px; }
+  .lab-grid { display: grid; gap: 22px; align-items: start; }
+  .lab-grid > .app + .app { margin-top: 0; }
+  .lab-two { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+  .lab-explain { grid-template-columns: 300px minmax(0, 1fr); }
+  .lab-spoof { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); }
+  .lab-audit { grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); }
+  .lab-panel h3 { font-size: 1.05rem; margin: 20px 0 8px; }
+  .lab-panel .app > h3:first-child { margin-top: 0; }
+  .lab-panel .btn { font-size: 0.95rem; padding: 7px 15px; }
+  .lab-panel .btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .lab-h { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; margin: 20px 0 8px; }
+  .lab-h h3 { margin: 0; }
+  .lab-panel .takeaway { border-left-color: var(--pc); }
+  #deploy-stats { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  #deploy-stats .stat .v { font-size: 1.5rem; }
+  #deploy-stats .stat .l { font-size: 0.8rem; }
+  .lab-errors { padding-left: 20px; margin: 6px 0 0; font-size: 0.93rem; }
+  .lab-errors li { margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+  .lab-field { margin-bottom: 10px; }
+  .lab-field label { display: block; font-size: 0.88rem; margin-bottom: 2px; }
+  .lab-field select { width: 100%; }
+  .lab-slider { display: flex; align-items: center; gap: 10px; }
+  .lab-slider output { min-width: 3.5ch; text-align: right; }
+  .lab-readout { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .lab-risk { font-size: 3.4rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+  .lab-risk.hi { color: var(--red); }
+  .lab-risk.lo { color: var(--teal); }
+  .lab-panel table { margin: 6px 0 12px; font-size: 0.92rem; }
+  .lab-panel tr.sum td { font-weight: 700; border-top: 2px solid var(--ink); }
+  .lab-result { font-weight: 700; }
+  .lab-check { display: inline-flex; gap: 8px; align-items: center; font-size: 0.92rem; }
+  .lab-hint { margin-top: 8px; }
+  #ex-label { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* chart vocabulary of the lab tools */
+  svg .c-alert { stroke: var(--red); fill: var(--red); }
+  svg .c-safe { stroke: var(--teal); fill: var(--teal); }
+  svg .c-ink { fill: var(--ink); }
+  svg .c-muted { stroke: var(--muted); }
+  svg .c-amber { stroke: var(--amber); }
+  svg polyline.c-alert, svg polyline.c-safe { fill: none; }
+  svg .c-rep { stroke: var(--red); }
+  svg .hypo { stroke: var(--red); stroke-width: 1.5; stroke-dasharray: 2 3; }
+  svg .hypo-label { fill: var(--red); font-size: 11.5px; }
+  svg .band { fill: var(--muted); opacity: 0.14; }
+  svg .future-label { fill: var(--amber); font-weight: 700; }
+  svg .handle { fill: var(--panel); stroke: var(--red); stroke-width: 2.5; cursor: ns-resize; }
+  svg .handle.moved { fill: var(--red); }
+
+  /* bedside monitor of the spoofing tool, dark in both themes */
+  .lab-monitor { background: var(--monitor-bg); color: var(--monitor-ink); border: 3px solid var(--monitor-edge); border-radius: 14px; padding: 18px; position: sticky; top: 84px; color-scheme: dark; }
+  .lab-monitor h3 { color: var(--monitor-muted); font-weight: 400; }
+  .lab-alarm { font-size: 1.7rem; font-weight: 700; padding: 10px 14px; border-radius: 8px; text-align: center; }
+  .lab-alarm.on { background: var(--monitor-red); color: #FFFFFF; animation: lab-blink 1.2s steps(2, jump-none) infinite; }
+  .lab-alarm.off { border: 2px solid var(--monitor-green); color: var(--monitor-green); }
+  @keyframes lab-blink { 50% { opacity: 0.55; } }
+  .lab-vitals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin: 16px 0 10px; }
+  .lab-vitals div { border-top: 1px solid var(--monitor-edge); padding-top: 6px; }
+  .lab-vitals dt { color: var(--monitor-muted); font-size: 0.8rem; }
+  .lab-vitals dd { margin: 0; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--monitor-green); }
+  .lab-vitals .wide { grid-column: 1 / -1; }
+  .lab-vitals .wide dd { font-size: 1.05rem; color: var(--monitor-ink); }
+  .lab-flag { min-height: 1.5em; font-size: 0.92rem; color: var(--monitor-muted); }
+  .lab-flag.warn { color: var(--monitor-amber); font-weight: 700; }
+  .lab-monitor svg text { fill: var(--monitor-ink); }
+  .lab-monitor svg .tick { fill: var(--monitor-muted); }
+  .lab-monitor svg .axis { stroke: var(--monitor-muted); }
+  .lab-monitor svg .f-alert { fill: var(--monitor-red); }
+  .lab-monitor svg .f-safe { fill: var(--monitor-green); }
+
+  /* audit */
+  #au-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  #au-stats .stat .v { font-size: 1.6rem; }
+  .lab-ci { display: block; color: var(--muted); font-size: 0.82rem; white-space: nowrap; }
+  .lab-sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 7px; vertical-align: -1px; }
+  .lab-sw.w { background: var(--violet); }
+  .lab-sw.m { background: var(--ink); }
+  .lab-gapline { font-weight: 700; margin: 10px 0 0; }
+  .lab-card-preview { margin-top: 14px; }
+  .lab-card-preview summary { cursor: pointer; color: var(--muted); }
+  .lab-card-preview pre { white-space: pre-wrap; font-size: 0.8rem; line-height: 1.45; background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; max-height: 340px; overflow: auto; }
+  svg .au-w { stroke: var(--violet); }
+  svg .au-m { stroke: var(--ink); }
+  svg .au-wb { fill: var(--violet); opacity: 0.16; }
+  svg .au-mb { fill: var(--ink); opacity: 0.11; }
+  svg .au-gap { stroke: var(--red); stroke-width: 2.5; fill: none; }
+  svg .au-gapt { fill: var(--red); font-weight: 700; paint-order: stroke; stroke: var(--paper); stroke-width: 5px; stroke-linejoin: round; }
+  .lab-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0 0 6px; font-size: 0.84rem; color: var(--muted); }
+  .lab-legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .lab-legend i { width: 20px; height: 3px; border-radius: 2px; }
+  .lab-legend i.w { background: var(--violet); }
+  .lab-legend i.m { background: var(--ink); }
+  .lab-legend i.b { height: 11px; background: color-mix(in srgb, var(--violet) 18%, transparent); border: 1px solid color-mix(in srgb, var(--violet) 35%, transparent); }
+  #au-flip .stat .v { font-size: 1.45rem; white-space: nowrap; }
+  svg .au-dw { fill: var(--violet); stroke: var(--panel); stroke-width: 2; }
+  svg .au-dm { fill: var(--ink); stroke: var(--panel); stroke-width: 2; }
+
+  /* ---------- debrief: the discharge summary ---------- */
+  .dx-doc { position: relative; max-width: 960px; margin: 0 auto; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: clamp(18px, 4.2vw, 50px); box-shadow: 0 22px 44px -30px color-mix(in srgb, var(--ink) 55%, transparent); }
+  .dx-letterhead { border-bottom: 3px solid var(--ink); padding: 0 230px 14px 0; }
+  .dx-kicker { margin: 0 0 6px; color: var(--muted); font-size: 0.9rem; }
+  .dx-letterhead h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); letter-spacing: -0.025em; }
+  .dx-sub { margin: 6px 0 0; color: var(--muted); }
+  .dx-meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 22px; margin: 16px 0 0; }
+  .dx-meta div { border-top: 1px solid var(--line); padding-top: 6px; }
+  .dx-meta dt { font-size: 0.78rem; color: var(--muted); }
+  .dx-meta dd { margin: 0; font-weight: 700; line-height: 1.35; }
+  .dx-stamp { position: absolute; top: clamp(18px, 3vw, 34px); right: clamp(18px, 3.4vw, 44px); z-index: 2; display: grid; justify-items: center; padding: 10px 18px 9px; color: var(--teal); border: 3px solid var(--teal); border-radius: 10px; box-shadow: inset 0 0 0 2px var(--panel), inset 0 0 0 3.5px var(--teal); transform: rotate(-8deg); text-align: center; line-height: 1.05; pointer-events: none; }
+  .dx-stamp .a { font-size: 1.55rem; font-weight: 700; letter-spacing: 0.02em; }
+  .dx-stamp .b { font-size: 1.02rem; font-weight: 700; margin-top: 3px; }
+  .dx-stamp .c { font-size: 0.74rem; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .dx-stamp.armed { opacity: 0; }
+  .dx-stamp.armed.go { animation: dx-stamp 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.2) var(--d, 0s) both; }
+  @keyframes dx-stamp { from { opacity: 0; transform: rotate(-8deg) scale(2); } 70% { opacity: 1; transform: rotate(-8deg) scale(0.94); } to { opacity: 1; transform: rotate(-8deg) scale(1); } }
+  .dx-strip { margin: 24px 0 6px; border: 1px solid var(--line); border-radius: 6px; padding: 14px 0 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 18px; }
+  .dx-beat { min-width: 0; text-align: center; }
+  .dx-bt { margin: 0; padding: 0 8px; font-size: 0.86rem; line-height: 1.3; }
+  .dx-bt strong { color: var(--pc); }
+  .dx-bt span { display: block; color: var(--muted); font-size: 0.78rem; font-variant-numeric: tabular-nums; }
+  .dx-bsvg svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .dx-bsvg .tr { fill: none; stroke: var(--pc); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+  .dx-bsvg .brk { fill: none; stroke: var(--muted); stroke-width: 2.6; stroke-dasharray: 2 8; stroke-linecap: round; }
+  .dx-ann { padding: 0 10px; }
+  .dx-bv { margin: 2px 0 0; font-size: clamp(1.4rem, 2.6vw, 1.9rem); font-weight: 700; line-height: 1.1; color: var(--pc); font-variant-numeric: tabular-nums; }
+  .dx-bc { margin: 4px auto 0; font-size: 0.86rem; line-height: 1.3; max-width: 24ch; }
+  .dx-bs { margin: 5px 0 0; font-size: 0.74rem; color: var(--muted); }
+  .dx-bs::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--pc); margin-right: 5px; vertical-align: 0; }
+  .dx-bs.own::before { background: var(--pc); }
+  .dx-strip.armed .tr { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); }
+  .dx-strip.armed.go .tr { transition: stroke-dashoffset 0.55s linear var(--d, 0s); stroke-dashoffset: 0; }
+  .dx-strip.armed .brk, .dx-strip.armed .dx-ann { opacity: 0; }
+  .dx-strip.armed .dx-ann { transform: translateY(6px); }
+  .dx-strip.armed.go .brk { transition: opacity 0.3s ease-out var(--d, 0s); opacity: 1; }
+  .dx-strip.armed.go .dx-ann { transition: opacity 0.4s ease-out var(--da, 0s), transform 0.4s ease-out var(--da, 0s); opacity: 1; transform: none; }
+  .dx-legend { margin: 0; color: var(--muted); font-size: 0.8rem; text-align: right; }
+  .dx-sec { margin-top: 34px; }
+  .dx-sec-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 4px 16px; border-bottom: 2px solid var(--pc); padding-bottom: 6px; }
+  .dx-sec-head h3 { margin: 0; font-size: 1.3rem; letter-spacing: -0.01em; }
+  .dx-n { display: inline-grid; place-items: center; width: 1.6em; height: 1.6em; margin-right: 10px; border-radius: 50%; background: var(--pc); color: var(--on-accent); font-size: 0.8em; vertical-align: 0.08em; }
+  .dx-sec-head p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .dx-table { margin: 2px 0 0; font-size: 0.93rem; line-height: 1.45; }
+  .dx-table thead th { font-size: 0.78rem; font-weight: 700; color: var(--muted); padding-top: 10px; }
+  .dx-table tbody th { width: 23%; padding-right: 14px; }
+  .dx-table td { width: 38.5%; padding-right: 14px; }
+  .dx-ans { font-weight: 700; }
+  .dx-v { display: inline-block; font-size: 0.86rem; font-weight: 700; }
+  .dx-v.yes { color: var(--teal); }
+  .dx-v.no { color: var(--red); }
+  .dx-none { color: var(--muted); }
+  .dx-go { color: var(--muted); white-space: nowrap; }
+  .dx-go:hover { color: var(--ink); }
+  .dx-done { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
+  .dx-done i { width: 15px; height: 15px; border-radius: 4px; border: 2px solid var(--pc); flex: none; }
+  .dx-done.on i { background: var(--pc); }
+  .dx-done.off { color: var(--muted); font-weight: 400; }
+  .dx-assess { margin: 14px 0 0; padding: 2px 0 2px 14px; border-left: 4px solid var(--pc); max-width: 76ch; }
+  .dx-trail { display: grid; grid-template-columns: minmax(0, 23%) minmax(0, 1fr); gap: 10px 14px; margin: 14px 0 0; }
+  .dx-trail dt { font-weight: 700; font-size: 0.93rem; padding-top: 3px; }
+  .dx-trail dd { margin: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+  .dx-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; color: var(--muted); background: var(--panel); text-decoration: none; }
+  .dx-chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--pc, var(--muted)); }
+  .dx-chip.on { color: var(--ink); border-color: var(--pc, var(--ink)); }
+  .dx-chip.on::before { background: var(--pc, var(--ink)); }
+  .dx-close { margin-top: 40px; padding-top: 26px; border-top: 3px solid var(--ink); }
+  .dx-close-lead { font-size: clamp(1.15rem, 2vw, 1.4rem); line-height: 1.4; max-width: 60ch; margin: 0 0 22px; }
+  .dx-thanks { font-size: clamp(2.2rem, 5vw, 3.4rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin: 0 0 10px; }
+  .dx-ack { max-width: 70ch; color: var(--muted); }
+  .dx-qa { display: inline-flex; align-items: center; gap: 12px; margin: 10px 0 0; padding: 10px 18px; border: 2px solid var(--ink); border-radius: 999px; font-weight: 700; font-size: 1.1rem; }
+  .dx-qa i { width: 11px; height: 11px; border-radius: 50%; background: var(--red); animation: lab-blink 1.6s steps(2, jump-none) infinite; }
+  .dx-links { margin-top: 28px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px 28px; }
+  .dx-links h4 { margin: 0 0 8px; font-size: 0.95rem; }
+  .dx-links ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .dx-links a { text-decoration-color: var(--line); }
+  .dx-links a:hover { text-decoration-color: var(--ink); }
+  .dx-links .s { color: var(--muted); font-size: 0.86rem; }
+  .dx-links .op { color: var(--teal); font-size: 0.8rem; font-weight: 700; margin-left: 6px; }
+  .dx-actions { max-width: 960px; margin: 18px auto 0; }
+  .dx-print-note { max-width: 960px; margin: 8px auto 0; }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 980px) {
+    .lab-two, .lab-explain, .lab-spoof, .lab-audit { grid-template-columns: minmax(0, 1fr); }
+    .lab-monitor { position: static; }
+    .lab-ward, .lab-bench { scroll-margin-top: 118px; }
+    .wr-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .dx-letterhead { padding-right: 0; }
+    .dx-stamp { position: relative; top: auto; right: auto; display: inline-grid; margin: 4px 0 18px 4px; }
+    .dx-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dx-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dx-links { grid-template-columns: minmax(0, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .wr-list { grid-template-columns: minmax(0, 1fr); }
+    #deploy-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    #au-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lab-risk { font-size: 2.8rem; }
+    .lab-tab { padding: 9px 12px 12px; }
+    .dx-table thead { display: none; }
+    .dx-table, .dx-table tbody, .dx-table tr, .dx-table th, .dx-table td { display: block; width: auto; }
+    .dx-table tr { padding: 10px 0 8px; border-bottom: 1px solid var(--line); }
+    .dx-table tbody th, .dx-table td { border: 0; padding: 0; width: auto; }
+    .dx-table td::before { content: attr(data-label); display: block; margin-top: 6px; font-size: 0.76rem; color: var(--muted); }
+    .dx-trail { grid-template-columns: minmax(0, 1fr); }
+    .dx-qa { font-size: 1rem; }
+    .dx-bv { font-size: 1.2rem; }
+    .dx-bs { font-size: 0; }
+    .dx-bs::before { margin-right: 0; }
+    .dx-legend .dx-bs { font-size: 0.8rem; }
+    .dx-legend .dx-bs::before { margin-right: 5px; }
+  }
+
+  /* ---------- print: only the discharge summary ---------- */
+  @media print {
+    @page { margin: 14mm 13mm; }
+    html { font-size: 10.5pt; background: none; }
+    #site-top, .lab-ward, .lab-tabs, .lab-panel:not(#panel-debrief), .site-footer, .dx-actions, .dx-print-note, .curtain, .help { display: none !important; }
+    #panel-debrief, #panel-debrief[hidden] { display: block !important; padding: 0; }
+    .lab-bench { padding: 0; }
+    .lab-bench .wrap { max-width: none; padding: 0; }
+    .dx-doc { max-width: none; border: 0; box-shadow: none; padding: 0; }
+    .dx-letterhead { padding-right: 200px; }
+    .dx-stamp { position: absolute; top: 0; right: 4px; margin: 0; }
+    .dx-meta { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .dx-strip { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .dx-links { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .dx-strip, .dx-stamp, .dx-n, .dx-chip, .dx-done, .wr-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .dx-stamp, .dx-strip .tr, .dx-strip .brk, .dx-strip .dx-ann { opacity: 1 !important; animation: none !important; stroke-dashoffset: 0 !important; transform: none; }
+    .dx-stamp { transform: rotate(-8deg) !important; }
+    .dx-qa i { animation: none; }
+    .dx-sec-head, .dx-table tr, .dx-assess, .dx-strip { break-inside: avoid; }
+    .dx-sec-head { break-after: avoid; }
+    a { text-decoration: none; }
+  }
+</style>
+</head>
+<body data-page="lab" data-part="lab">
+<header id="site-top"></header>
+<main>
+  <section class="lab-ward paper" data-station id="ward" aria-labelledby="lab-title">
+    <div class="wrap">
+      <p class="part-tag"><strong>Finale · Ward round</strong><span>11:50 to 12:00</span></p>
+      <h1 id="lab-title">Everything on one bench</h1>
+      <p class="lead">Every tool of the morning, side by side, and a debrief of the session.</p>
+      <div class="wr">
+        <div class="wr-head">
+          <h2 id="wr-title">Ward round</h2>
+          <span class="wr-bar" id="wr-bar" aria-hidden="true"></span>
+          <p class="wr-count num" id="wr-count">0 of 6 tasks done</p>
+        </div>
+        <ol class="wr-list" id="wr-list" aria-labelledby="wr-title"></ol>
+        <p class="sr-only" id="wr-live" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="lab-bench" data-station id="bench" aria-label="Lab tools">
+    <div class="wrap">
+      <div class="lab-tabs" role="tablist" aria-label="Lab tools, in the order of the workshop programme">
+        <button class="lab-tab" role="tab" type="button" data-part="p1" id="tab-deploy" aria-controls="panel-deploy" aria-selected="true"><span class="tp">Part 1</span><span class="tn">Deploy?<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+        <button class="lab-tab" role="tab" type="button" data-part="p2" id="tab-explain" aria-controls="panel-explain" aria-selected="false" tabindex="-1"><span class="tp">Part 2</span><span class="tn">Explain a patient<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+        <button class="lab-tab" role="tab" type="button" data-part="p2" id="tab-shapley" aria-controls="panel-shapley" aria-selected="false" tabindex="-1"><span class="tp">Part 2</span><span class="tn">Shapley by hand<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+        <button class="lab-tab" role="tab" type="button" data-part="p3" id="tab-spoof" aria-controls="panel-spoof" aria-selected="false" tabindex="-1"><span class="tp">Part 3</span><span class="tn">Spoof the sensor<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+        <button class="lab-tab" role="tab" type="button" data-part="p4" id="tab-audit" aria-controls="panel-audit" aria-selected="false" tabindex="-1"><span class="tp">Part 4</span><span class="tn">Audit<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+        <button class="lab-tab" role="tab" type="button" data-part="fin" id="tab-debrief" aria-controls="panel-debrief" aria-selected="false" tabindex="-1"><span class="tp">Finale</span><span class="tn">Debrief<span class="tk" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M4 10.5 L8.5 15 L16 5.5"/></svg></span></span></button>
+      </div>
+
+      <section class="lab-panel" data-part="p1" id="panel-deploy" role="tabpanel" aria-labelledby="tab-deploy">
+        <div class="lab-intro">
+          <h2>Would you deploy this model?</h2>
+          <p class="lead">A neural network scores <span data-k="wdbc-n">569</span> breast biopsies, each by a model that never saw that biopsy. Move the threshold and watch what the accuracy figure hides.</p>
+          <p class="nbref">On the <a href="part1.html">Part 1 page</a>, stations 1 to 3, and in <a data-nb="NB1">NB1</a>, sections 2 to 4.</p>
+        </div>
+        <div class="lab-grid lab-two">
+          <div class="app">
+            <label class="control" for="thr">Decision threshold <output id="thr-out" for="thr">0.50</output></label>
+            <input type="range" id="thr" min="0.01" max="0.98" step="0.01" value="0.5">
+            <div class="stats" id="deploy-stats" aria-live="polite"></div>
+            <div class="paper chart" id="hist"></div>
+          </div>
+          <div class="app">
+            <h3>Wrong and sure</h3>
+            <p class="note">The most confident mistakes at the current threshold. A confident error looks exactly like a confident correct answer.</p>
+            <ol class="lab-errors" id="errors"></ol>
+            <h3>Does 0.9 mean 90 percent?</h3>
+            <div class="paper chart" id="calib"></div>
+            <p class="note" id="calib-note"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="lab-panel" data-part="p2" id="panel-explain" role="tabpanel" aria-labelledby="tab-explain" hidden>
+        <div class="lab-intro">
+          <h2>Why this risk, for this patient?</h2>
+          <p class="lead">A gradient boosting model predicts coronary artery disease from <span data-k="heart-vars">13</span> clinical variables. Edit any value; the Shapley values are exact, over all <span data-k="heart-coal">8,192</span> coalitions, against <span data-k="heart-bg">16</span> reference patients.</p>
+          <p class="nbref">On the <a href="part2.html">Part 2 page</a>, stations 2 to 4, and in <a data-nb="NB2">NB2</a>, sections 4 and 5.</p>
+        </div>
+        <div class="lab-grid lab-explain">
+          <div class="app">
+            <div class="lab-field"><label for="patient">Patient</label><select id="patient"></select></div>
+            <div id="feature-controls"></div>
+            <button class="btn" id="reset-patient" type="button">Restore recorded values</button>
+          </div>
+          <div class="app">
+            <div class="lab-readout"><span id="risk" class="lab-risk">0.00</span><span id="risk-label" class="note"></span></div>
+            <h3>SHAP: how each value moves the risk</h3>
+            <div class="paper chart" id="waterfall"></div>
+            <div class="lab-h"><h3>LIME: a local linear approximation</h3><button class="btn" id="lime-again" type="button">Run LIME again</button></div>
+            <div class="paper chart" id="lime"></div>
+            <p class="note" id="lime-note" aria-live="polite"></p>
+            <div class="lab-h"><h3>What would change the prediction?</h3><button class="btn primary" id="cf-run" type="button">Find a counterfactual</button></div>
+            <div id="cf-out" class="note" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="lab-panel" data-part="p2" id="panel-shapley" role="tabpanel" aria-labelledby="tab-shapley" hidden>
+        <div class="lab-intro">
+          <h2>How is the credit shared, step by step?</h2>
+          <p class="lead">Pick three variables. They become players in a game whose payoff is the predicted risk; an absent player takes its values from <span data-k="heart-bg">16</span> reference patients. A player's Shapley value is its gain averaged over every order of arrival.</p>
+          <p class="nbref">On the <a href="part2.html">Part 2 page</a>, station 2, and in <a data-nb="NB2">NB2</a>, sections 3 and 4.</p>
+        </div>
+        <div class="lab-grid lab-two">
+          <div class="app">
+            <div class="lab-field"><label for="sh-patient">Patient</label><select id="sh-patient"></select></div>
+            <div class="lab-field"><label for="sh-a">First player</label><select id="sh-a"></select></div>
+            <div class="lab-field"><label for="sh-b">Second player</label><select id="sh-b"></select></div>
+            <div class="lab-field"><label for="sh-c">Third player</label><select id="sh-c"></select></div>
+            <h3>Every coalition</h3>
+            <table id="sh-coalitions"></table>
+          </div>
+          <div class="app">
+            <h3>Every order of arrival</h3>
+            <table id="sh-orders"></table>
+            <p class="lab-result" id="sh-result" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="lab-panel" data-part="p3" id="panel-spoof" role="tabpanel" aria-labelledby="tab-spoof" hidden>
+        <div class="lab-intro">
+          <h2>Can a correct alert be silenced?</h2>
+          <p class="lead">Each example is one real hour of glucose monitoring from an older adult with type 1 diabetes, and glucose fell below 70 mg/dL within the next 30 minutes. Drag the readings or run the attacker, within <span data-k="cgm-budget">15</span> mg/dL of every true reading.</p>
+          <p class="nbref">On the <a href="part3.html">Part 3 page</a>, stations 2 and 3, and in <a data-nb="NB4">NB4</a>, sections 3 and 4.</p>
+        </div>
+        <div class="lab-grid lab-spoof">
+          <div class="app">
+            <div class="row spread"><button class="btn" id="ex-prev" type="button">Previous example</button><span id="ex-label"></span><button class="btn" id="ex-next" type="button">Next example</button></div>
+            <div class="paper chart" id="cgm"></div>
+            <div class="row">
+              <button class="btn primary" id="attack" type="button">Run the attacker</button>
+              <button class="btn" id="reveal" type="button" aria-pressed="false">Show what happened next</button>
+              <button class="btn" id="cgm-reset" type="button">Restore true readings</button>
+              <label class="lab-check"><input type="checkbox" id="budget" checked> Keep every change within <span data-k="cgm-budget">15</span> mg/dL</label>
+            </div>
+            <p class="note" id="attack-note" aria-live="polite"></p>
+          </div>
+          <aside class="lab-monitor" aria-live="polite" aria-label="Alert monitor">
+            <div id="alarm" class="lab-alarm off">No alert</div>
+            <dl class="lab-vitals">
+              <div><dt>Risk from the model</dt><dd id="m-risk"></dd></div>
+              <div><dt>Alert threshold</dt><dd id="m-thr"></dd></div>
+              <div><dt>Queries used by the attacker</dt><dd id="m-queries">0</dd></div>
+              <div><dt>Largest change to a reading</dt><dd id="m-change"></dd></div>
+              <div class="wide"><dt>Counterfactual margin: how much lower glucose would have to be to trigger the alert</dt><dd id="m-margin"></dd></div>
+            </dl>
+            <p class="lab-flag" id="m-flag"></p>
+            <h3>What the explanation says</h3>
+            <div class="chart" id="cgm-shap"></div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="lab-panel" data-part="p4" id="panel-audit" role="tabpanel" aria-labelledby="tab-audit" hidden>
+        <div class="lab-intro">
+          <h2>Does one threshold serve women and men alike?</h2>
+          <p class="lead">Out-of-fold predictions of the NB7 model for all <span data-k="nb7-n">297</span> Cleveland patients. Move the referral threshold and compare the sensitivity for <span data-k="nb7-w">96</span> women and <span data-k="nb7-m">201</span> men.</p>
+          <p class="nbref">On the <a href="part1.html">Part 1 page</a>, station 1, the <a href="part4.html">Part 4 page</a>, stations 2 and 3, and in <a data-nb="NB7">NB7</a>, sections 2 and 3.</p>
+        </div>
+        <div class="lab-grid lab-audit">
+          <div class="app">
+            <label class="control" for="au-thr">Referral threshold <output id="au-thr-out" for="au-thr">0.50</output></label>
+            <input type="range" id="au-thr" min="0.1" max="0.9" step="0.01" value="0.5">
+            <div class="stats" id="au-stats" aria-live="polite"></div>
+            <table id="au-table"></table>
+            <p class="lab-gapline" id="au-gap" aria-live="polite"></p>
+            <div class="row" style="margin-top:14px">
+              <button class="btn primary" id="au-boot" type="button">Compute intervals</button>
+              <button class="btn" id="au-card-dl" type="button">Download the model card</button>
+            </div>
+            <p class="note" id="au-boot-note" aria-live="polite">Intervals: 95 percent bootstrap, 1,000 seeded resamples within each group.</p>
+            <details class="lab-card-preview"><summary>Preview the model card</summary><pre id="au-card"></pre></details>
+          </div>
+          <div class="app">
+            <h3>Sensitivity at every threshold</h3>
+            <div class="paper chart" id="au-chart"></div>
+            <p class="lab-legend" id="au-legend"></p>
+            <div class="stats" id="au-flip" aria-live="polite"></div>
+          </div>
+        </div>
+        <p class="takeaway">Thresholds, subgroups and explanations belong in the same review.</p>
+      </section>
+
+      <section class="lab-panel" data-part="fin" id="panel-debrief" role="tabpanel" aria-labelledby="tab-debrief" hidden>
+        <article class="dx-doc" id="dx-doc" aria-labelledby="dx-title">
+          <div class="dx-stamp" id="dx-stamp" aria-hidden="true"><span class="a">Discharged</span><span class="b">with papers</span><span class="c">28 October 2026</span></div>
+          <header class="dx-letterhead">
+            <p class="dx-kicker">IEEE CARS 2026 · XAI Lab · Ward round</p>
+            <h2 id="dx-title">Discharge summary</h2>
+            <p class="dx-sub">Explainable AI in medical systems: from black box models to reliable clinical decision support</p>
+          </header>
+          <dl class="dx-meta" id="dx-meta"></dl>
+          <div class="dx-strip paper" id="dx-strip" role="img"></div>
+          <p class="dx-legend" id="dx-legend"><span class="dx-bs own">recorded in this browser</span> &nbsp; <span class="dx-bs">reference result</span></p>
+          <div id="dx-body"></div>
+          <section class="dx-close" aria-labelledby="dx-close-title">
+            <h3 class="sr-only" id="dx-close-title">Closing</h3>
+            <p class="dx-close-lead">The model leaves with papers: an explanation for each decision, tests that show the explanations are faithful, signals that make attacks observable, and documents that state its limits.</p>
+            <p class="dx-thanks">Thank you.</p>
+            <p class="dx-ack">Thanks to the Center for Cyber Security Research (C2SR) of the University of North Dakota, Grand Forks, ND, USA, organiser of IEEE CARS 2026.</p>
+            <p class="dx-qa"><i aria-hidden="true"></i>Questions and discussion until 12:00</p>
+            <div class="dx-links">
+              <div>
+                <h4>The seven notebooks in Colab</h4>
+                <ul id="dx-nbs"></ul>
+              </div>
+              <div>
+                <h4>Where to go next</h4>
+                <ul id="dx-more"></ul>
+              </div>
+            </div>
+          </section>
+        </article>
+        <div class="row dx-actions">
+          <button class="btn primary" id="dx-print" type="button">Print or save as PDF</button>
+          <button class="btn" id="dx-clear" type="button">Clear the progress in this browser</button>
+        </div>
+        <p class="note dx-print-note" id="dx-note" aria-live="polite">The summary is generated from what was recorded in this browser on the part pages, from the notebook buttons and in this lab. Nothing leaves the browser.</p>
+      </section>
+    </div>
+  </section>
+</main>
+<footer data-footer data-credits="Data: Wisconsin Diagnostic Breast Cancer and UCI Cleveland heart disease (UCI Machine Learning Repository, CC BY 4.0); CGM recordings of Weinstock et al. (2016) as distributed by GlucoBench, whose example traces on this page remain under CC BY-SA 4.0. Teaching models only; not for clinical decisions. The debrief also quotes results of NB5 and NB6 on the PhysioNet/Computing in Cardiology Challenge 2019 and the MIT-BIH Atrial Fibrillation Database."></footer>
+<script src="assets/site-data.js"></script>
+<script src="assets/lab-core.js"></script>
+<script src="assets/site.js"></script>
+<script src="assets/lab-ui.js"></script>
+</body>
+</html>
